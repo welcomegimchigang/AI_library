@@ -1,0 +1,115 @@
+﻿:root {
+  font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+  color: #1a2433;
+  background: linear-gradient(120deg, #eef4ff, #f6f9fc);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr 380px;
+  gap: 12px;
+  padding: 12px;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #d9e2ef;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.filter-panel label,
+.chat-form,
+.chat-form textarea,
+.filter-panel select,
+.filter-panel input {
+  width: 100%;
+}
+
+.filter-panel label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+select,
+input,
+textarea,
+button {
+  border-radius: 8px;
+  border: 1px solid #c8d5e6;
+  padding: 8px;
+  font-size: 14px;
+}
+
+button {
+  cursor: pointer;
+  background: #0b5fff;
+  color: #fff;
+  border: none;
+}
+
+.chat-form {
+  display: grid;
+  gap: 8px;
+}
+
+.hint,
+.health,
+.summary,
+.muted,
+small {
+  color: #586378;
+}
+
+.history-item {
+  border-top: 1px dashed #dae3f0;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.cards {
+  display: grid;
+  gap: 8px;
+  max-height: 45vh;
+  overflow: auto;
+}
+
+.card {
+  border: 1px solid #dbe5f4;
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.card p,
+.card h3 {
+  margin: 0;
+}
+
+.workflow {
+  margin-top: 12px;
+}
+
+.wf-item {
+  border-left: 3px solid #7aa6ff;
+  padding-left: 8px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 1120px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "ai-library-mvp",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build:data": "node scripts/build-tools-data.mjs",
+    "predev": "npm run build:data",
+    "prebuild": "npm run build:data",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "preview:cf": "wrangler pages dev dist --functions functions --compatibility-date=2025-01-01"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260205.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "vite": "^5.4.12",
+    "wrangler": "^4.2.0"
+  }
+}
