@@ -77,9 +77,25 @@ const WORKFLOW_TEMPLATES = {
 
 let toolsPromise = null;
 const chatCache = new Map();
+const PLATFORM_ALIASES = {
+  web: ["웹", "web", "browser"],
+  mobile: ["모바일", "mobile", "android", "ios"],
+  windows: ["윈도우", "windows", "win", "pc"],
+  mac: ["맥", "mac", "macos"],
+};
 
 function text(v) {
   return String(v ?? "").toLowerCase();
+}
+
+function normPlatform(value = "") {
+  const v = text(value);
+  if (!v) return "";
+  if (PLATFORM_ALIASES.web.some((k) => v.includes(k))) return "web";
+  if (PLATFORM_ALIASES.mobile.some((k) => v.includes(k))) return "mobile";
+  if (PLATFORM_ALIASES.windows.some((k) => v.includes(k))) return "windows";
+  if (PLATFORM_ALIASES.mac.some((k) => v.includes(k))) return "mac";
+  return v;
 }
 
 function normalizeFilters(filters = {}) {
@@ -87,7 +103,8 @@ function normalizeFilters(filters = {}) {
     category: filters.category || "",
     budget: filters.budget || "",
     location: filters.location || "",
-    platform: filters.platform || "",
+    platform: normPlatform(filters.platform || ""),
+    use_case: filters.use_case || "",
     q: filters.q || "",
   };
 }
@@ -133,15 +150,9 @@ function matchLocation(tool, location) {
 
 function matchPlatform(tool, platform) {
   if (!platform) return true;
-  const p = text(platform);
+  const p = normPlatform(platform);
   const v = text(tool.supportedPlatforms);
-  const map = {
-    웹: ["웹", "web", "browser"],
-    모바일: ["모바일", "mobile", "android", "ios"],
-    윈도우: ["윈도우", "windows", "win"],
-    맥: ["맥", "mac", "macos"],
-  };
-  const keys = map[platform] || map[p] || [p];
+  const keys = PLATFORM_ALIASES[p] || [p];
   return keys.some((k) => v.includes(k));
 }
 
@@ -185,10 +196,15 @@ export function parseMessageToFilters(message) {
   if (/(국내|한국|korea)/.test(m)) filters.location = "국내";
   else if (/(해외|global|미국|일본|유럽)/.test(m)) filters.location = "해외";
 
-  if (/(웹|web|브라우저)/.test(m)) filters.platform = "웹";
-  else if (/(모바일|mobile|ios|android)/.test(m)) filters.platform = "모바일";
-  else if (/(윈도우|windows|pc)/.test(m)) filters.platform = "윈도우";
-  else if (/(맥|mac|macos)/.test(m)) filters.platform = "맥";
+  if (/(웹|web|브라우저)/.test(m)) filters.platform = "web";
+  else if (/(모바일|mobile|ios|android)/.test(m)) filters.platform = "mobile";
+  else if (/(윈도우|windows|pc)/.test(m)) filters.platform = "windows";
+  else if (/(맥|mac|macos)/.test(m)) filters.platform = "mac";
+
+  if (/(쇼츠|짧은|shorts|릴스)/.test(m)) filters.use_case = "쇼츠";
+  else if (/(롱폼|긴 영상|장편|long)/.test(m)) filters.use_case = "롱폼";
+  else if (/(블로그|뉴스레터|카피|콘텐츠)/.test(m)) filters.use_case = "콘텐츠 제작";
+  else if (/(코딩|코드|개발|디버깅)/.test(m)) filters.use_case = "개발 생산성";
 
   const queryTokens = (message || "")
     .split(/\s+/)
@@ -199,6 +215,100 @@ export function parseMessageToFilters(message) {
   if (queryTokens.length > 0) filters.q = queryTokens.join(" ");
 
   return filters;
+}
+
+function categoryKeywords(category = "") {
+  const found = CATEGORY_RULES.find((x) => x.id === category);
+  return found ? found.keywords : [];
+}
+
+function matchedKeywordCount(hay, words) {
+  let count = 0;
+  for (const w of words) {
+    if (w && hay.includes(text(w))) count += 1;
+  }
+  return count;
+}
+
+function scoreTool(tool, filters, message) {
+  const f = normalizeFilters(filters);
+  const msgWords = String(message || "")
+    .split(/\s+/)
+    .map((x) => x.trim())
+    .filter((x) => x.length >= 2)
+    .slice(0, 8);
+  const type = text(tool.serviceType);
+  const name = text(tool.serviceName);
+  const features = (tool.keyFeatures_list || []).map(text).join(" ");
+  const all = `${name} ${type} ${features}`;
+
+  let score = 0;
+
+  if (f.category) {
+    const kws = categoryKeywords(f.category);
+    if (type.includes(text(f.category)) || kws.some((k) => type.includes(text(k)))) score += 3;
+  }
+  for (const w of msgWords) {
+    if (name.includes(text(w))) score += 2;
+    if (type.includes(text(w))) score += 3;
+    if (features.includes(text(w))) score += 2;
+  }
+  if (f.use_case && all.includes(text(f.use_case))) score += 2;
+  if (f.budget && matchBudget(tool, f.budget)) score += 2;
+  if (f.platform && matchPlatform(tool, f.platform)) score += 2;
+  if (f.location && matchLocation(tool, f.location)) score += 1;
+  score += matchedKeywordCount(all, categoryKeywords(f.category)) > 0 ? 1 : 0;
+
+  return score;
+}
+
+export function rankTools(tools, filters = {}, message = "", limit = 8) {
+  const f = normalizeFilters(filters);
+  const max = Math.min(Math.max(Number(limit) || 8, 3), 10);
+
+  const strict = tools
+    .filter((tool) => (!f.budget ? true : matchBudget(tool, f.budget)))
+    .filter((tool) => (!f.platform ? true : matchPlatform(tool, f.platform)))
+    .filter((tool) => (!f.location ? true : matchLocation(tool, f.location)))
+    .map((tool) => ({ tool, score: scoreTool(tool, f, message) }))
+    .sort((a, b) => b.score - a.score || text(b.tool.releaseDate).localeCompare(text(a.tool.releaseDate)))
+    .map((x) => x.tool);
+
+  if (strict.length >= 3) return strict.slice(0, max);
+
+  const broad = tools
+    .map((tool) => ({ tool, score: scoreTool(tool, f, message) }))
+    .sort((a, b) => b.score - a.score || text(b.tool.releaseDate).localeCompare(text(a.tool.releaseDate)))
+    .map((x) => x.tool);
+
+  return broad.slice(0, max);
+}
+
+export function computeState(prevState, message, filters, toolCount) {
+  const m = text(message);
+  const hasRefineWord = /(무료만|유료만|모바일|웹|비슷한|더 보여|다시|재추천|다른)/.test(m);
+  if (hasRefineWord || prevState === "recommended") return "refining";
+  if (!filters.category || !filters.use_case) return "collecting";
+  return toolCount > 0 ? "recommended" : "collecting";
+}
+
+export function computeMissingSlots(filters = {}) {
+  const missing = [];
+  if (!filters.category) missing.push("category");
+  if (!filters.use_case) missing.push("use_case");
+  return missing.slice(0, 1);
+}
+
+export function defaultQuickReplies(filters = {}, missing = []) {
+  if (missing[0] === "use_case") return ["쇼츠", "긴 영상", "둘 다"];
+  if (missing[0] === "category") return ["영상 편집", "디자인", "개발"];
+  const platform = filters.platform || "";
+  const budget = filters.budget || "";
+  return [
+    budget === "free" ? "유료 포함 보기" : "무료만 다시 보기",
+    platform === "mobile" ? "웹 위주로 보기" : "모바일 위주로 보기",
+    "비슷한 툴 더 보기",
+  ];
 }
 
 function chooseTemplateKey(category = "") {

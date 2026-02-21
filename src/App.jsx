@@ -1,11 +1,12 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 
-const STORAGE_KEY = "ai_tool_chat_history_v2";
+const STORAGE_KEY = "ai_tool_chat_history_v3";
 const defaultFilters = {
   category: "",
   budget: "",
   location: "",
   platform: "",
+  use_case: "",
   q: "",
 };
 
@@ -37,32 +38,14 @@ function saveMessages(items) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(-20)));
 }
 
-function formatFilters(filters = {}) {
-  const map = {
-    category: "카테고리",
-    budget: "예산",
-    location: "지역",
-    platform: "플랫폼",
-    q: "키워드",
-  };
-  const parts = Object.entries(filters)
-    .filter(([, value]) => Boolean(value))
-    .map(([key, value]) => `${map[key] || key}:${value}`);
-  return parts.length ? parts.join(" · ") : "조건 자동 추출 없음";
-}
-
-function makeAssistantText(payload) {
-  const toolCount = payload?.tools?.length || 0;
-  const wfCount = payload?.workflow?.length || 0;
-  return `조건 ${formatFilters(payload?.filters)} | 추천 ${toolCount}개 | 실행 ${wfCount}단계`;
-}
-
 export default function App() {
   const [filters, setFilters] = useState(defaultFilters);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [healthOk, setHealthOk] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [chatState, setChatState] = useState("collecting");
+  const [activeFilters, setActiveFilters] = useState(defaultFilters);
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -77,10 +60,7 @@ export default function App() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, loading]);
 
-  const recentPrompts = useMemo(() => {
-    const list = messages.filter((m) => m.role === "user").slice(-10).reverse();
-    return list;
-  }, [messages]);
+  const recentPrompts = useMemo(() => messages.filter((m) => m.role === "user").slice(-10).reverse(), [messages]);
 
   function appendMessages(newItems) {
     setMessages((prev) => {
@@ -88,6 +68,36 @@ export default function App() {
       saveMessages(next);
       return next;
     });
+  }
+
+  function makeAssistantMessage(data, prefix = "") {
+    return {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      role: "assistant",
+      text: `${prefix}${data?.reply?.text || "추천 결과를 준비했습니다."}`,
+      payload: {
+        filters: data.filters || {},
+        tools: data.tools || [],
+        workflow: data.workflow || [],
+        quickReplies: data.quickReplies || [],
+      },
+    };
+  }
+
+  async function callChatApi(textInput) {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: textInput,
+        state: chatState,
+        filters: activeFilters,
+      }),
+    });
+    const data = await res.json();
+    setChatState(data.state || "collecting");
+    setActiveFilters((prev) => ({ ...prev, ...(data.filters || {}) }));
+    appendMessages([makeAssistantMessage(data)]);
   }
 
   async function runFilterSearch() {
@@ -101,15 +111,17 @@ export default function App() {
     try {
       const res = await fetch(`/api/tools?${params.toString()}`);
       const data = await res.json();
-      const payload = { filters: data.filters || {}, tools: data.tools || [], workflow: [] };
-      appendMessages([
-        {
-          id: Date.now(),
-          role: "assistant",
-          text: `필터 검색 결과 | ${makeAssistantText(payload)}`,
-          payload,
-        },
-      ]);
+      const synthetic = {
+        reply: { text: `필터 기반으로 ${data.tools?.length || 0}개를 찾았어요.` },
+        state: "recommended",
+        filters: data.filters || filters,
+        tools: data.tools || [],
+        workflow: [],
+        quickReplies: ["비슷한 툴 더 보기", "무료만 다시 보기", "모바일 위주로 보기"],
+      };
+      setChatState("recommended");
+      setActiveFilters((prev) => ({ ...prev, ...(synthetic.filters || {}) }));
+      appendMessages([makeAssistantMessage(synthetic, "필터 검색 | ")]);
     } finally {
       setLoading(false);
     }
@@ -119,37 +131,22 @@ export default function App() {
     e.preventDefault();
     if (!message.trim()) return;
 
-    const userMsg = {
-      id: Date.now(),
-      role: "user",
-      text: message.trim(),
-    };
-
-    appendMessages([userMsg]);
+    const userText = message.trim();
+    appendMessages([{ id: Date.now(), role: "user", text: userText }]);
+    setMessage("");
     setLoading(true);
-
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg.text }),
-      });
-      const data = await res.json();
+      await callChatApi(userText);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-      appendMessages([
-        {
-          id: Date.now() + 1,
-          role: "assistant",
-          text: makeAssistantText(data),
-          payload: {
-            filters: data.filters || {},
-            tools: data.tools || [],
-            workflow: data.workflow || [],
-          },
-        },
-      ]);
-
-      setMessage("");
+  async function onQuickReplyClick(textInput) {
+    appendMessages([{ id: Date.now(), role: "user", text: textInput }]);
+    setLoading(true);
+    try {
+      await callChatApi(textInput);
     } finally {
       setLoading(false);
     }
@@ -164,9 +161,7 @@ export default function App() {
             카테고리
             <select value={filters.category} onChange={(e) => setFilters((p) => ({ ...p, category: e.target.value }))}>
               {categoryOptions.map((opt) => (
-                <option key={opt || "all"} value={opt}>
-                  {opt || "전체"}
-                </option>
+                <option key={opt || "all"} value={opt}>{opt || "전체"}</option>
               ))}
             </select>
           </label>
@@ -190,10 +185,10 @@ export default function App() {
             플랫폼
             <select value={filters.platform} onChange={(e) => setFilters((p) => ({ ...p, platform: e.target.value }))}>
               <option value="">전체</option>
-              <option value="웹">웹</option>
-              <option value="모바일">모바일</option>
-              <option value="윈도우">윈도우</option>
-              <option value="맥">맥</option>
+              <option value="web">웹</option>
+              <option value="mobile">모바일</option>
+              <option value="windows">윈도우</option>
+              <option value="mac">맥</option>
             </select>
           </label>
           <label>
@@ -211,9 +206,7 @@ export default function App() {
           ) : (
             <div className="recent-list">
               {recentPrompts.map((item) => (
-                <button key={item.id} className="recent-item" onClick={() => setMessage(item.text)}>
-                  {item.text}
-                </button>
+                <button key={item.id} className="recent-item" onClick={() => setMessage(item.text)}>{item.text}</button>
               ))}
             </div>
           )}
@@ -223,19 +216,16 @@ export default function App() {
       <main className="chatbot panel">
         <div className="chat-head">
           <h1 className="chat-title">AI 툴 추천 챗봇</h1>
-          <p className="chat-subtitle">짧은 답변 + 추천 카드 3~5개 + 워크플로우 3~5단계</p>
+          <p className="chat-subtitle">추천은 DB 코드가 결정하고, 답변은 상담형으로 안내합니다.</p>
         </div>
 
         <div className="chat-log">
           {messages.length === 0 ? (
-            <div className="bubble assistant">
-              <p>요청을 입력하면 바로 추천합니다. 예: 무료 웹 기반 영상 편집 툴 추천</p>
-            </div>
+            <div className="bubble assistant"><p className="bubble-text">원하는 작업을 말해 주세요. 예: 무료 웹 기반 영상 편집 AI 추천</p></div>
           ) : (
             messages.map((item) => (
               <div key={item.id} className={`bubble ${item.role}`}>
                 <p className="bubble-text">{item.text}</p>
-
                 {item.role === "assistant" && item.payload ? (
                   <>
                     <div className="cards">
@@ -245,6 +235,7 @@ export default function App() {
                           <span className="tool-meta">요금: {tool.price_bucket || "unknown"}</span>
                           <span className="tool-meta">지역: {tool.location || "unknown"}</span>
                           <span className="tool-meta">플랫폼: {tool.supportedPlatforms || "unknown"}</span>
+                          <span className="tool-meta">이유: {tool.why || "조건과 기능이 맞습니다."}</span>
                           <a className="tool-link" href={tool.website} target="_blank" rel="noreferrer">공식 링크</a>
                         </article>
                       ))}
@@ -253,8 +244,14 @@ export default function App() {
                     <div className="workflow">
                       {(item.payload.workflow || []).slice(0, 5).map((step) => (
                         <div className="wf-item" key={`${item.id}-${step.step}`}>
-                          {step.step}. {step.goal} {step.tool?.serviceName ? `(${step.tool.serviceName})` : ""}
+                          {step.step}. {step.goal} {step.toolHint ? `(${step.toolHint})` : ""}
                         </div>
+                      ))}
+                    </div>
+
+                    <div className="recent-list" style={{ marginTop: 8 }}>
+                      {(item.payload.quickReplies || []).slice(0, 4).map((qr) => (
+                        <button key={`${item.id}-${qr}`} className="recent-item" onClick={() => onQuickReplyClick(qr)}>{qr}</button>
                       ))}
                     </div>
                   </>
@@ -262,18 +259,12 @@ export default function App() {
               </div>
             ))
           )}
-
-          {loading ? <div className="bubble assistant"><p>추천 계산 중...</p></div> : null}
+          {loading ? <div className="bubble assistant"><p className="bubble-text">추천 계산 중...</p></div> : null}
           <div ref={bottomRef} />
         </div>
 
         <form onSubmit={onSubmitChat} className="composer">
-          <textarea
-            rows={3}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="원하는 작업/예산/플랫폼을 입력하세요"
-          />
+          <textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="원하는 작업/예산/플랫폼을 입력하세요" />
           <button type="submit" disabled={loading}>전송</button>
         </form>
       </main>
