@@ -1,0 +1,18 @@
+﻿@import "tailwindcss";
+
+:root {
+  --primary: #9684a1;
+  --accent: #985f99;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Pretendard", "Noto Sans KR", sans-serif;
+  color: #0f172a;
+}
