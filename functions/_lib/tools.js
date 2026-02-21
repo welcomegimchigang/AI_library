@@ -270,9 +270,22 @@ export function rankTools(tools, filters = {}, message = "", limit = 8) {
     .filter((tool) => (!f.budget ? true : matchBudget(tool, f.budget)))
     .filter((tool) => (!f.platform ? true : matchPlatform(tool, f.platform)))
     .filter((tool) => (!f.location ? true : matchLocation(tool, f.location)))
+    // 검색어가 있다면 무조건 포함해야 함
+    .filter((tool) => (!f.q ? true : matchQ(tool, f.q)))
     .map((tool) => ({ tool, score: scoreTool(tool, f, message) }))
+    // 명확한 검색어(q)나 카테고리가 있는데 스코어가 0이면 아예 연관 없는 것이므로 버림
+    .filter((x) => {
+      const hasSpecificFilter = Boolean(f.q || f.category);
+      if (hasSpecificFilter && x.score === 0) return false;
+      return true;
+    })
     .sort((a, b) => b.score - a.score || text(b.tool.releaseDate).localeCompare(text(a.tool.releaseDate)))
     .map((x) => x.tool);
+
+  // 검색어나 카테고리가 명확한데 strict 결과가 비어있다면, 억지로 broad를 보여주지 않고 빈 배열 리턴
+  if ((f.q || f.category) && strict.length === 0) {
+    return [];
+  }
 
   if (strict.length >= 3) return strict.slice(0, max);
 
