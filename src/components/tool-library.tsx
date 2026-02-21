@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Search, ExternalLink, ThumbsUp, Moon, Sun } from "lucide-react";
+import { Search, ExternalLink, ThumbsUp, Moon, Sun, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getUserSession } from "@/lib/auth";
+import { ReviewModal } from "@/components/reviews/review-modal";
 
 interface OriginalTool {
     damoa_id: number;
@@ -38,7 +40,13 @@ export function ToolLibrary() {
     const [upvotes, setUpvotes] = useState<Record<number, number>>({});
     const [isDarkMode, setIsDarkMode] = useState(false);
 
+    const [user, setUser] = useState<any>(null);
+    const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+
     useEffect(() => {
+        // 유저 세션 주기적 체크 (헤더 연동용)
+        const session = getUserSession();
+        setUser(session);
         // Phase 1: Fetch data dynamically
         fetch("/data/tools.json")
             .then((res) => res.json())
@@ -79,6 +87,12 @@ export function ToolLibrary() {
     };
 
     const handleUpvote = (id: number) => {
+        // 로그인 체크 (Phase 7)
+        if (!getUserSession()) {
+            alert("로그인이 필요한 기능입니다. 우측 상단의 구글 로그인을 진행해주세요.");
+            return;
+        }
+
         const newUpvotes = { ...upvotes, [id]: (upvotes[id] || 0) + 1 };
         setUpvotes(newUpvotes);
         localStorage.setItem("ai_library_upvotes", JSON.stringify(newUpvotes));
@@ -112,12 +126,6 @@ export function ToolLibrary() {
                 <div className="flex items-center gap-4">
                     <Button variant="outline" onClick={toggleDarkMode} className="rounded-full w-10 h-10 p-0 border-slate-200 dark:border-slate-700 dark:text-white">
                         {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-                    </Button>
-                    <Button
-                        onClick={() => window.open("https://forms.gle/your-google-form-url", "_blank")} // Phase 4 Modal/Form link
-                        className="bg-purple-600 hover:bg-purple-700 text-white rounded-full"
-                    >
-                        새로운 AI 툴 제보하기
                     </Button>
                 </div>
             </div>
@@ -191,6 +199,21 @@ export function ToolLibrary() {
                                         <ThumbsUp size={16} className="mr-2" />
                                         추천 {upvotes[tool.id] || 0}
                                     </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            if (!getUserSession()) {
+                                                alert("로그인이 필요한 기능입니다. 우측 상단에서 로그인해주세요.");
+                                                return;
+                                            }
+                                            setSelectedTool(tool);
+                                        }}
+                                        className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                                    >
+                                        <MessageSquare size={16} className="mr-2" />
+                                        리뷰
+                                    </Button>
                                     <a href={tool.url} target="_blank" rel="noreferrer">
                                         <Button size="sm" className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600">
                                             방문하기
@@ -203,6 +226,15 @@ export function ToolLibrary() {
                     ))}
                 </div>
             )}
+
+            {/* Review Modal (Phase 7) */}
+            <ReviewModal
+                isOpen={selectedTool !== null}
+                onClose={() => setSelectedTool(null)}
+                toolId={selectedTool?.id || 0}
+                toolName={selectedTool?.name || ""}
+                user={user}
+            />
         </div>
     );
 }
