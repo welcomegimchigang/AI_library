@@ -12,18 +12,17 @@
 }
 
 export async function generateChatLayerWithGpt(env, input) {
-  const apiKey = env?.OPENAI_API_KEY;
-  if (!apiKey) {
-    // 로컬 환경이나 API Key가 없을 때 임시로 동작할 Fallback 로직 
-    // 최소한의 룰셋으로 의도(Intent) 파악
-    const m = String(input?.message || "");
+  const m = String(input?.message || "");
+  const fallbackIntent = () => {
     const isSearchWord = /(추천|알려|찾아|있어|뭐가|뭘까|도구|툴|ai|어떤|만드는|설계)/i.test(m);
-
     return {
       intent: isSearchWord ? "search_tools" : "off_topic",
       filters: { q: m.length > 2 ? m : null }
     };
-  }
+  };
+
+  const apiKey = env?.OPENAI_API_KEY;
+  if (!apiKey) return fallbackIntent();
 
   const { message } = input;
 
@@ -66,20 +65,26 @@ export async function generateChatLayerWithGpt(env, input) {
       }),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) return fallbackIntent();
 
     const payload = await res.json();
-    const text = extractTextFromResponsesPayload(payload);
-    if (!text) return null;
+    let text = extractTextFromResponsesPayload(payload);
+    if (!text) return fallbackIntent();
 
-    const parsed = JSON.parse(text);
-    if (!parsed || typeof parsed !== "object") return null;
+    text = text.replace(/```json\n?/ig, "").replace(/```\n?/g, "").trim();
 
-    return {
-      intent: String(parsed.intent || "off_topic"),
-      filters: parsed.filters && typeof parsed.filters === "object" ? parsed.filters : {},
-    };
+    try {
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== "object") return fallbackIntent();
+
+      return {
+        intent: String(parsed.intent || "off_topic"),
+        filters: parsed.filters && typeof parsed.filters === "object" ? parsed.filters : {},
+      };
+    } catch {
+      return fallbackIntent();
+    }
   } catch {
-    return null;
+    return fallbackIntent();
   }
 }
