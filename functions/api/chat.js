@@ -1,12 +1,7 @@
 ﻿import {
-  computeMissingSlots,
-  computeState,
   defaultQuickReplies,
-  getChatCache,
   loadTools,
-  parseMessageToFilters,
   rankTools,
-  setChatCache,
 } from "../_lib/tools.js";
 import { generateChatLayerWithGpt } from "../_lib/openai.js";
 
@@ -16,51 +11,52 @@ export async function onRequestPost(context) {
   try {
     const body = await request.json();
     const message = String(body?.message || "").trim();
-    const prevState = String(body?.state || "");
     const prevFilters = body?.filters && typeof body.filters === "object" ? body.filters : {};
-    const history = Array.isArray(body?.history) ? body.history : [];
 
-    const parsed = parseMessageToFilters(message);
+    // 1. AI에게 의도(Intent) 파악 및 필터 추출 요청
+    const gpt = await generateChatLayerWithGpt(env, { message });
+
+    // 2. Case A: 무관한 질문이거나 프롬프트 응답 실패 (매크로 1)
+    if (!gpt || gpt.intent === "off_topic") {
+      return Response.json({
+        reply: {
+          text: "안녕하세요! 저는 AI 툴 추천 챗봇이기에 해당 문의에 대해선 답변할 수 없습니다.",
+        },
+        state: "collecting",
+        missing: [],
+        quickReplies: [],
+        filters: prevFilters,
+        tools: [],
+      });
+    }
+
+    // 3. Case B: 툴 검색 요청 (search_tools)
+    // 기존 필터와 GPT가 새로 뽑아준 필터 병합
     const filters = {
       ...prevFilters,
-      ...parsed,
+      ...(gpt.filters || {}),
     };
 
-    const cacheKey = JSON.stringify({ message, state: prevState, filters });
-    const cached = getChatCache(cacheKey);
-    if (cached) return Response.json(cached);
-
+    // DB 로드 및 검색
     const tools = await loadTools(request, env);
-    const candidates = rankTools(tools, filters, message, 8);
-    const chosenTools = candidates.slice(0, 5);
+    const rankedTools = rankTools(tools, filters, message, 5);
 
-    const initialState = computeState(prevState, message, filters, chosenTools.length);
-    const missing = computeMissingSlots(filters);
-    const state = missing.length > 0 ? "collecting" : initialState;
+    // 4. Case B-1: 매칭되는 툴이 없는 경우 (매크로 2)
+    if (rankedTools.length === 0) {
+      return Response.json({
+        reply: {
+          text: "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다.",
+        },
+        state: "refining",
+        missing: [],
+        quickReplies: defaultQuickReplies(filters, []),
+        filters,
+        tools: [],
+      });
+    }
 
-    const gpt = await generateChatLayerWithGpt(env, {
-      message,
-      state,
-      missing,
-      filters,
-      candidates,
-      history,
-    });
-
-    const selectedSet = new Set((gpt?.selectedIds || []).map((x) => Number(x)));
-    const finalTools = gpt?.isOffTopic
-      ? []
-      : selectedSet.size
-        ? chosenTools.filter((t) => selectedSet.has(Number(t.damoa_id))).slice(0, 5)
-        : chosenTools;
-
-    const whyMap = new Map(
-      (gpt?.toolReasons || [])
-        .filter((x) => finalTools.some((t) => Number(t.damoa_id) === Number(x.damoa_id)))
-        .map((x) => [Number(x.damoa_id), x.why])
-    );
-
-    const toolsOut = finalTools.map((t) => ({
+    // 5. Case B-2: 매칭되는 툴이 있는 경우 (매크로 3)
+    const toolsOut = rankedTools.map((t) => ({
       damoa_id: t.damoa_id,
       serviceName: t.serviceName,
       website: t.website,
@@ -69,36 +65,20 @@ export async function onRequestPost(context) {
       location: t.location,
       supportedPlatforms: t.supportedPlatforms,
       thumbnail: t.thumbnail,
-      why: whyMap.get(Number(t.damoa_id)) || `${t.serviceType || "관련"} 작업에 맞는 핵심 기능이 있습니다.`,
+      // GPT가 더이상 이유(why)를 생성하지 않으므로 고정 문구 제공
+      why: `${t.serviceType || "관련"} 작업에 유용한 AI 툴입니다.`,
     }));
 
-    const hasAnyFilter = Boolean(filters.category || filters.use_case || filters.budget || filters.platform || filters.location);
-    const fallbackText =
-      state === "collecting"
-        ? hasAnyFilter
-          ? "좋아요, 요청하신 조건의 일부를 확인했어요. 추천 정확도를 높이기 위해 한 가지만 더 여쭤볼게요."
-          : "안녕하세요! 저는 AI 툴 추천 챗봇입니다. 어떤 작업(예: 영상 편집, 디자인, 코딩 등)을 위한 툴을 찾고 계신가요?"
-        : `요청하신 조건에 맞춰 ${toolsOut.length}개의 툴을 골라봤어요. 카드에서 자세히 확인해보세요.`;
-
-    // 만약 필터가 전혀 없고 GPT 응답도 실패했다면, 무관한 질문으로 간주하고 툴 추천을 비움
-    if (!gpt && !hasAnyFilter) {
-      finalTools.length = 0;
-      toolsOut.length = 0;
-    }
-
-    const payload = {
+    return Response.json({
       reply: {
-        text: gpt?.replyText || fallbackText,
+        text: "요청하신 조건에 맞는 AI 툴을 추천해 드립니다. 아래 카드를 확인해보세요!",
       },
-      state,
-      missing: gpt?.missing?.length ? gpt.missing : missing,
-      quickReplies: gpt?.quickReplies?.length ? gpt.quickReplies : defaultQuickReplies(filters, missing),
+      state: "recommended",
+      missing: [],
+      quickReplies: defaultQuickReplies(filters, []),
       filters,
       tools: toolsOut,
-    };
-
-    setChatCache(cacheKey, payload);
-    return Response.json(payload);
+    });
   } catch (error) {
     return Response.json({ error: "Invalid request", detail: String(error?.message || error) }, { status: 400 });
   }

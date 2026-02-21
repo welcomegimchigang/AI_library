@@ -15,42 +15,26 @@ export async function generateChatLayerWithGpt(env, input) {
   const apiKey = env?.OPENAI_API_KEY;
   if (!apiKey) return null;
 
-  const { message, state, missing, filters, candidates, history } = input;
+  const { message } = input;
 
   const system = [
-    "너는 AI 툴 추천 상담 챗봇이다.",
-    "한국어로만 답해라.",
-    "장문 금지: 1~3문장.",
-    "상담형 톤으로 답해라. 첫 문장은 사용자의 요청을 짧게 공감/확인하는 말로 시작해라.",
-    "조건이 부족하면 질문은 최대 1개만 한다.",
-    "절대 후보 목록 밖 툴을 언급하지 마라.",
-    "사용자의 질문이 AI 툴 추천과 무관한 일상 대화나 질문(예: 안녕, 너 몇살이야 등)인 경우 isOffTopic을 true로 설정하고 툴을 추천하지 마라.",
-    "quickReplies는 짧고 클릭하기 쉽게 3개 제안해라.",
-    "JSON만 출력해라.",
+    "너는 AI 툴 추천 챗봇의 자연어 의도 분석기(Intent Classifier)이다.",
+    "사용자의 메시지가 일상/무관한 대화인지, 아니면 특정 AI 툴에 대한 추천/검색 요청인지 판단해라.",
+    "추천 요청이라면 주어진 키워드를 추출해라.",
+    "오직 JSON 형식으로만 반환하고 다른 텍스트는 출력하지 마라."
   ].join(" ");
 
   const userPayload = {
     message,
-    state,
-    missing,
-    history: Array.isArray(history) ? history.slice(-6) : [],
-    filters,
-    candidates: candidates.map((t) => ({
-      damoa_id: t.damoa_id,
-      serviceName: t.serviceName,
-      serviceType: t.serviceType,
-      price_bucket: t.price_bucket,
-      location: t.location,
-      supportedPlatforms: t.supportedPlatforms,
-      keyFeatures_list: t.keyFeatures_list,
-    })),
     required_output_shape: {
-      replyText: "string",
-      quickReplies: ["string"],
-      selectedIds: ["number"],
-      toolReasons: [{ damoa_id: "number", why: "string" }],
-      missing: ["string"],
-      isOffTopic: "boolean",
+      intent: "off_topic | search_tools",
+      filters: {
+        category: "string | null",
+        budget: "free | paid | null",
+        platform: "web | mobile | windows | mac | null",
+        location: "국내 | 해외 | null",
+        q: "string | null (핵심 검색 키워드)"
+      }
     },
   };
 
@@ -67,7 +51,7 @@ export async function generateChatLayerWithGpt(env, input) {
           { role: "system", content: [{ type: "input_text", text: system }] },
           { role: "user", content: [{ type: "input_text", text: JSON.stringify(userPayload) }] },
         ],
-        max_output_tokens: 280,
+        max_output_tokens: 150,
       }),
     });
 
@@ -81,18 +65,8 @@ export async function generateChatLayerWithGpt(env, input) {
     if (!parsed || typeof parsed !== "object") return null;
 
     return {
-      replyText: String(parsed.replyText || "").trim(),
-      quickReplies: Array.isArray(parsed.quickReplies) ? parsed.quickReplies.map((x) => String(x)).slice(0, 4) : [],
-      selectedIds: Array.isArray(parsed.selectedIds)
-        ? parsed.selectedIds.map((x) => Number(x)).filter((x) => Number.isFinite(x)).slice(0, 5)
-        : [],
-      toolReasons: Array.isArray(parsed.toolReasons)
-        ? parsed.toolReasons
-          .map((x) => ({ damoa_id: Number(x?.damoa_id), why: String(x?.why || "") }))
-          .filter((x) => Number.isFinite(x.damoa_id) && x.why)
-        : [],
-      missing: Array.isArray(parsed.missing) ? parsed.missing.map((x) => String(x)).slice(0, 1) : [],
-      isOffTopic: Boolean(parsed.isOffTopic),
+      intent: String(parsed.intent || "off_topic"),
+      filters: parsed.filters && typeof parsed.filters === "object" ? parsed.filters : {},
     };
   } catch {
     return null;
