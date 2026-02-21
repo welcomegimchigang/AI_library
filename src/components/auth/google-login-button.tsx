@@ -7,7 +7,7 @@ interface GoogleLoginButtonProps {
     clientId?: string;
 }
 
-export function GoogleLoginButton({ onSuccess, clientId = "YOUR_GOOGLE_CLIENT_ID" }: GoogleLoginButtonProps) {
+export function GoogleLoginButton({ onSuccess, clientId = "468959466359-rveprmcm0k334f2tjs3mnvc5vfef1640.apps.googleusercontent.com" }: GoogleLoginButtonProps) {
     useEffect(() => {
         renderGoogleButton("google-login-div", clientId, onSuccess);
     }, [clientId, onSuccess]);
