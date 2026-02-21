@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { ToolLibrary } from "@/components/tool-library";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -62,6 +63,11 @@ export function HomePage() {
               </Card>
             ))}
           </div>
+        </section>
+
+        {/* Phase 1-5: Tool Library Section */}
+        <section id="library" className="bg-slate-50 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 transition-colors duration-300">
+          <ToolLibrary />
         </section>
 
         <section className="mx-auto w-full max-w-6xl px-4 pb-16 md:px-6">
