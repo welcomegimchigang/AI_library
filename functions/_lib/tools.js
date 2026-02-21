@@ -156,9 +156,12 @@ function matchPlatform(tool, platform) {
   return keys.some((k) => v.includes(k));
 }
 
+const STOP_WORDS = new Set(["ai", "알려줘", "알려", "찾아줘", "찾아", "추천해줘", "추천", "만드는", "해주는", "관련", "어떤", "있는", "도구", "툴", "프로그램", "앱", "기능", "있어", "뭐가", "뭘까"]);
+
 function matchQ(tool, q) {
   if (!q) return true;
-  const words = text(q).split(/\s+/).filter(Boolean);
+  const words = text(q).split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
+  if (words.length === 0) return false;
   const hay = [tool.serviceName, tool.serviceType, ...(tool.keyFeatures_list || [])].map(text).join(" ");
   return words.some((w) => hay.includes(w));
 }
