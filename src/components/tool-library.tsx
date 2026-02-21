@@ -88,14 +88,27 @@ export function ToolLibrary() {
 
     const handleUpvote = (id: number) => {
         // 로그인 체크 (Phase 7)
-        if (!getUserSession()) {
+        const session = getUserSession();
+        if (!session) {
             alert("로그인이 필요한 기능입니다. 우측 상단의 구글 로그인을 진행해주세요.");
             return;
         }
 
+        // 하루 제한 로직 (Phase 8)
+        const today = new Date().toLocaleDateString();
+        const historyKey = `upvote_${session.sub || session.email}_${id}`;
+        const lastUpvoteDate = localStorage.getItem(historyKey);
+
+        if (lastUpvoteDate === today) {
+            alert("해당 AI 툴은 하루에 한 번만 추천할 수 있습니다. 내일 다시 시도해주세요!");
+            return;
+        }
+
+        // 업데이트 처리
         const newUpvotes = { ...upvotes, [id]: (upvotes[id] || 0) + 1 };
         setUpvotes(newUpvotes);
         localStorage.setItem("ai_library_upvotes", JSON.stringify(newUpvotes));
+        localStorage.setItem(historyKey, today);
     };
 
     const categories = ["전체", "이미지/아트", "텍스트/문서", "개발/코드", "비디오/오디오", "기타"];
@@ -227,13 +240,12 @@ export function ToolLibrary() {
                 </div>
             )}
 
-            {/* Review Modal (Phase 7) */}
+            {/* Review Modal (Phase 7 & 8) */}
             <ReviewModal
                 isOpen={selectedTool !== null}
                 onClose={() => setSelectedTool(null)}
                 toolId={selectedTool?.id || 0}
                 toolName={selectedTool?.name || ""}
-                user={user}
             />
         </div>
     );

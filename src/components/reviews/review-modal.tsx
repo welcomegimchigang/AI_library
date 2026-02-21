@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Star, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getUserSession } from "@/lib/auth";
 
 interface Review {
     id: string;
@@ -16,10 +17,9 @@ interface ReviewModalProps {
     onClose: () => void;
     toolId: number;
     toolName: string;
-    user: any; // 로그인된 유저 세션
 }
 
-export function ReviewModal({ isOpen, onClose, toolId, toolName, user }: ReviewModalProps) {
+export function ReviewModal({ isOpen, onClose, toolId, toolName }: ReviewModalProps) {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [newReview, setNewReview] = useState("");
     const [newRating, setNewRating] = useState(5);
@@ -40,12 +40,13 @@ export function ReviewModal({ isOpen, onClose, toolId, toolName, user }: ReviewM
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newReview.trim() || !user) return;
+        const currentUser = getUserSession();
+        if (!newReview.trim() || !currentUser) return;
 
         const review: Review = {
             id: Date.now().toString(),
-            userName: user.name,
-            userPicture: user.picture,
+            userName: currentUser.name,
+            userPicture: currentUser.picture,
             rating: newRating,
             content: newReview,
             date: new Date().toLocaleDateString(),
@@ -118,7 +119,7 @@ export function ReviewModal({ isOpen, onClose, toolId, toolName, user }: ReviewM
                         <textarea
                             value={newReview}
                             onChange={(e) => setNewReview(e.target.value)}
-                            placeholder={`${user.name}님, 이 도구에 대한 리뷰를 남겨주세요.`}
+                            placeholder={`${getUserSession()?.name || "사용자"}님, 이 도구에 대한 리뷰를 남겨주세요.`}
                             className="w-full p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none dark:text-white"
                             rows={3}
                             required
