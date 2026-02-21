@@ -1,14 +1,14 @@
 ﻿const CATEGORY_RULES = [
   { id: "글쓰기/컨텐츠", keywords: ["글", "블로그", "카피", "콘텐츠", "컨텐츠", "작문", "요약", "문서", "writing", "content"] },
-  { id: "디자인/아트", keywords: ["디자인", "이미지", "아트", "포스터", "브랜딩", "일러스트", "design", "art"] },
-  { id: "비디오/오디오", keywords: ["영상", "비디오", "쇼츠", "릴스", "편집", "음악", "오디오", "voice", "video", "audio"] },
+  { id: "디자인/아트", keywords: ["디자인", "이미지", "아트", "포스터", "브랜딩", "일러스트", "design", "art", "그림"] },
+  { id: "비디오/오디오", keywords: ["영상", "비디오", "쇼츠", "릴스", "편집", "음악", "오디오", "노래", "음원", "작곡", "voice", "video", "audio", "music"] },
   { id: "개발/프로그래밍", keywords: ["개발", "코드", "프로그래밍", "디버깅", "깃", "github", "api", "coding", "dev"] },
   { id: "검색/데이터", keywords: ["검색", "리서치", "조사", "데이터", "분석", "크롤링", "search", "research", "data"] },
-  { id: "생산성/협업도구", keywords: ["생산성", "협업", "회의", "정리", "노트", "프로젝트", "task", "collab", "productivity"] },
+  { id: "생산성/협업도구", keywords: ["생산성", "협업", "회의", "정리", "노트", "프로젝트", "task", "collab", "productivity", "ppt", "발표"] },
   { id: "비즈니스/마케팅", keywords: ["마케팅", "광고", "리드", "세일즈", "사업", "비즈니스", "브랜드", "campaign", "marketing"] },
   { id: "교육/학습", keywords: ["학습", "교육", "공부", "튜터", "문제", "퀴즈", "learning", "education", "study"] },
   { id: "게임", keywords: ["게임", "game", "npc", "맵", "레벨"] },
-  { id: "엔터테인먼트/기타", keywords: ["재미", "엔터", "취미", "기타", "entertainment"] },
+  { id: "엔터테인먼트/기타", keywords: ["재미", "엔터", "취미", "기타", "entertainment", "법률"] },
 ];
 
 const WORKFLOW_TEMPLATES = {
@@ -287,6 +287,13 @@ export function rankTools(tools, filters = {}, message = "", limit = 8) {
 
   // 검색어나 카테고리가 명확한데 strict 결과가 비어있다면, 억지로 broad를 보여주지 않고 빈 배열 리턴
   if ((f.q || f.category) && strict.length === 0) {
+    return [];
+  }
+
+  // 사용자가 찾고자 하는 구체적인 의도(q, category, use_case)가 아예 추출되지 않았다면 (예: "음악추천"을 GPT가 명사로 못 뽑은 경우)
+  // 아무 쓸모없는 랜덤 사이트(법률 등)를 던져주지 마라.
+  const hasSpecificIntent = Boolean(f.q || f.category || f.use_case);
+  if (!hasSpecificIntent) {
     return [];
   }
 
