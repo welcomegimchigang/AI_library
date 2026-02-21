@@ -48,9 +48,11 @@ export async function onRequestPost(context) {
     });
 
     const selectedSet = new Set((gpt?.selectedIds || []).map((x) => Number(x)));
-    const finalTools = selectedSet.size
-      ? chosenTools.filter((t) => selectedSet.has(Number(t.damoa_id))).slice(0, 5)
-      : chosenTools;
+    const finalTools = gpt?.isOffTopic
+      ? []
+      : selectedSet.size
+        ? chosenTools.filter((t) => selectedSet.has(Number(t.damoa_id))).slice(0, 5)
+        : chosenTools;
 
     const whyMap = new Map(
       (gpt?.toolReasons || [])

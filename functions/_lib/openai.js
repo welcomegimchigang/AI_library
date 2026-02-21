@@ -24,6 +24,7 @@ export async function generateChatLayerWithGpt(env, input) {
     "상담형 톤으로 답해라. 첫 문장은 사용자의 요청을 짧게 공감/확인하는 말로 시작해라.",
     "조건이 부족하면 질문은 최대 1개만 한다.",
     "절대 후보 목록 밖 툴을 언급하지 마라.",
+    "사용자의 질문이 AI 툴 추천과 무관한 일상 대화나 질문(예: 안녕, 너 몇살이야 등)인 경우 isOffTopic을 true로 설정하고 툴을 추천하지 마라.",
     "quickReplies는 짧고 클릭하기 쉽게 3개 제안해라.",
     "JSON만 출력해라.",
   ].join(" ");
@@ -49,6 +50,7 @@ export async function generateChatLayerWithGpt(env, input) {
       selectedIds: ["number"],
       toolReasons: [{ damoa_id: "number", why: "string" }],
       missing: ["string"],
+      isOffTopic: "boolean",
     },
   };
 
@@ -86,10 +88,11 @@ export async function generateChatLayerWithGpt(env, input) {
         : [],
       toolReasons: Array.isArray(parsed.toolReasons)
         ? parsed.toolReasons
-            .map((x) => ({ damoa_id: Number(x?.damoa_id), why: String(x?.why || "") }))
-            .filter((x) => Number.isFinite(x.damoa_id) && x.why)
+          .map((x) => ({ damoa_id: Number(x?.damoa_id), why: String(x?.why || "") }))
+          .filter((x) => Number.isFinite(x.damoa_id) && x.why)
         : [],
       missing: Array.isArray(parsed.missing) ? parsed.missing.map((x) => String(x)).slice(0, 1) : [],
+      isOffTopic: Boolean(parsed.isOffTopic),
     };
   } catch {
     return null;
