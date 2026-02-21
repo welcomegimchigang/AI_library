@@ -78,13 +78,13 @@ export default function App() {
       payload: {
         filters: data.filters || {},
         tools: data.tools || [],
-        workflow: data.workflow || [],
         quickReplies: data.quickReplies || [],
       },
     };
   }
 
   async function callChatApi(textInput) {
+    const history = messages.slice(-6).map((m) => ({ role: m.role, text: m.text }));
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -92,6 +92,7 @@ export default function App() {
         message: textInput,
         state: chatState,
         filters: activeFilters,
+        history,
       }),
     });
     const data = await res.json();
@@ -112,11 +113,10 @@ export default function App() {
       const res = await fetch(`/api/tools?${params.toString()}`);
       const data = await res.json();
       const synthetic = {
-        reply: { text: `필터 기반으로 ${data.tools?.length || 0}개를 찾았어요.` },
+        reply: { text: `좋아요, 필터 기준으로 ${data.tools?.length || 0}개를 먼저 골라봤어요.` },
         state: "recommended",
         filters: data.filters || filters,
         tools: data.tools || [],
-        workflow: [],
         quickReplies: ["비슷한 툴 더 보기", "무료만 다시 보기", "모바일 위주로 보기"],
       };
       setChatState("recommended");
@@ -216,7 +216,7 @@ export default function App() {
       <main className="chatbot panel">
         <div className="chat-head">
           <h1 className="chat-title">AI 툴 추천 챗봇</h1>
-          <p className="chat-subtitle">추천은 DB 코드가 결정하고, 답변은 상담형으로 안내합니다.</p>
+          <p className="chat-subtitle">원하는 작업을 편하게 말해 주세요. 조건 맞춰 바로 추천해드릴게요.</p>
         </div>
 
         <div className="chat-log">
@@ -238,14 +238,6 @@ export default function App() {
                           <span className="tool-meta">이유: {tool.why || "조건과 기능이 맞습니다."}</span>
                           <a className="tool-link" href={tool.website} target="_blank" rel="noreferrer">공식 링크</a>
                         </article>
-                      ))}
-                    </div>
-
-                    <div className="workflow">
-                      {(item.payload.workflow || []).slice(0, 5).map((step) => (
-                        <div className="wf-item" key={`${item.id}-${step.step}`}>
-                          {step.step}. {step.goal} {step.toolHint ? `(${step.toolHint})` : ""}
-                        </div>
                       ))}
                     </div>
 

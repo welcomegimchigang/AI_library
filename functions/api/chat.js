@@ -1,5 +1,4 @@
 ﻿import {
-  buildWorkflow,
   computeMissingSlots,
   computeState,
   defaultQuickReplies,
@@ -19,6 +18,7 @@ export async function onRequestPost(context) {
     const message = String(body?.message || "").trim();
     const prevState = String(body?.state || "");
     const prevFilters = body?.filters && typeof body.filters === "object" ? body.filters : {};
+    const history = Array.isArray(body?.history) ? body.history : [];
 
     const parsed = parseMessageToFilters(message);
     const filters = {
@@ -34,13 +34,6 @@ export async function onRequestPost(context) {
     const candidates = rankTools(tools, filters, message, 8);
     const chosenTools = candidates.slice(0, 5);
 
-    const category = filters.category || "검색/데이터";
-    const workflow = buildWorkflow(category, chosenTools).slice(0, 5).map((x) => ({
-      step: x.step,
-      goal: x.goal,
-      toolHint: x.tool?.serviceName || "",
-    }));
-
     const initialState = computeState(prevState, message, filters, chosenTools.length);
     const missing = computeMissingSlots(filters);
     const state = missing.length > 0 ? "collecting" : initialState;
@@ -51,15 +44,21 @@ export async function onRequestPost(context) {
       missing,
       filters,
       candidates,
+      history,
     });
+
+    const selectedSet = new Set((gpt?.selectedIds || []).map((x) => Number(x)));
+    const finalTools = selectedSet.size
+      ? chosenTools.filter((t) => selectedSet.has(Number(t.damoa_id))).slice(0, 5)
+      : chosenTools;
 
     const whyMap = new Map(
       (gpt?.toolReasons || [])
-        .filter((x) => chosenTools.some((t) => Number(t.damoa_id) === Number(x.damoa_id)))
+        .filter((x) => finalTools.some((t) => Number(t.damoa_id) === Number(x.damoa_id)))
         .map((x) => [Number(x.damoa_id), x.why])
     );
 
-    const toolsOut = chosenTools.map((t) => ({
+    const toolsOut = finalTools.map((t) => ({
       damoa_id: t.damoa_id,
       serviceName: t.serviceName,
       website: t.website,
@@ -73,8 +72,8 @@ export async function onRequestPost(context) {
 
     const fallbackText =
       state === "collecting"
-        ? "좋아요. 더 정확한 추천을 위해 한 가지만 확인할게요."
-        : `조건에 맞는 툴 ${toolsOut.length}개를 추렸어요. 바로 비교해보세요.`;
+        ? "좋아요, 요청 이해했어요. 더 정확히 맞추려고 한 가지만 여쭤볼게요."
+        : `좋아요, 요청에 맞춰 ${toolsOut.length}개를 골라봤어요. 카드에서 바로 비교해보세요.`;
 
     const payload = {
       reply: {
@@ -85,7 +84,6 @@ export async function onRequestPost(context) {
       quickReplies: gpt?.quickReplies?.length ? gpt.quickReplies : defaultQuickReplies(filters, missing),
       filters,
       tools: toolsOut,
-      workflow,
     };
 
     setChatCache(cacheKey, payload);
