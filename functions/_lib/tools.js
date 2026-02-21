@@ -288,6 +288,10 @@ export function computeState(prevState, message, filters, toolCount) {
   const m = text(message);
   const hasRefineWord = /(무료만|유료만|모바일|웹|비슷한|더 보여|다시|재추천|다른)/.test(m);
   if (hasRefineWord || prevState === "recommended") return "refining";
+
+  const hasAnyFilter = Boolean(filters.category || filters.use_case || filters.budget || filters.platform || filters.location || filters.q);
+  if (!hasAnyFilter) return "collecting";
+
   if (!filters.category || !filters.use_case) return "collecting";
   return toolCount > 0 ? "recommended" : "collecting";
 }
@@ -347,10 +351,10 @@ export function buildWorkflow(category, tools) {
       goal: step.goal,
       tool: matched
         ? {
-            damoa_id: matched.damoa_id,
-            serviceName: matched.serviceName,
-            website: matched.website,
-          }
+          damoa_id: matched.damoa_id,
+          serviceName: matched.serviceName,
+          website: matched.website,
+        }
         : null,
     };
   });
