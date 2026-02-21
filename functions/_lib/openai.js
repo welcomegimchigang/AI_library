@@ -13,7 +13,17 @@
 
 export async function generateChatLayerWithGpt(env, input) {
   const apiKey = env?.OPENAI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    // 로컬 환경이나 API Key가 없을 때 임시로 동작할 Fallback 로직 
+    // 최소한의 룰셋으로 의도(Intent) 파악
+    const m = String(input?.message || "");
+    const isSearchWord = /(추천|알려|찾아|있어|뭐가|뭘까|도구|툴|ai|어떤|만드는|설계)/i.test(m);
+
+    return {
+      intent: isSearchWord ? "search_tools" : "off_topic",
+      filters: { q: m.length > 2 ? m : null }
+    };
+  }
 
   const { message } = input;
 
