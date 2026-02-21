@@ -159,7 +159,7 @@ export default function App() {
     <div className="app">
       <aside className="sidebar">
         <div className="panel">
-          <h2>조건 필터</h2>
+          <h2 className="panel-title">조건 필터</h2>
           <label>
             카테고리
             <select value={filters.category} onChange={(e) => setFilters((p) => ({ ...p, category: e.target.value }))}>
@@ -201,11 +201,11 @@ export default function App() {
             <input value={filters.q} onChange={(e) => setFilters((p) => ({ ...p, q: e.target.value }))} />
           </label>
           <button onClick={runFilterSearch} disabled={loading}>필터로 추천</button>
-          <p className="meta">API: {healthOk ? "정상" : "확인 필요"}</p>
+          <p className="meta">API 상태: {healthOk ? "정상" : "확인 필요"}</p>
         </div>
 
         <div className="panel">
-          <h3>최근 질문 10개</h3>
+          <h3 className="panel-title">최근 질문 10개</h3>
           {recentPrompts.length === 0 ? (
             <p className="meta">아직 질문이 없습니다.</p>
           ) : (
@@ -222,8 +222,8 @@ export default function App() {
 
       <main className="chatbot panel">
         <div className="chat-head">
-          <h1>AI 툴 추천 챗봇</h1>
-          <p>짧은 답변 + 추천 카드 3~5개 + 워크플로우 3~5단계</p>
+          <h1 className="chat-title">AI 툴 추천 챗봇</h1>
+          <p className="chat-subtitle">짧은 답변 + 추천 카드 3~5개 + 워크플로우 3~5단계</p>
         </div>
 
         <div className="chat-log">
@@ -234,18 +234,18 @@ export default function App() {
           ) : (
             messages.map((item) => (
               <div key={item.id} className={`bubble ${item.role}`}>
-                <p>{item.text}</p>
+                <p className="bubble-text">{item.text}</p>
 
                 {item.role === "assistant" && item.payload ? (
                   <>
                     <div className="cards">
                       {(item.payload.tools || []).slice(0, 5).map((tool) => (
                         <article className="card" key={tool.damoa_id || tool.serviceName}>
-                          <strong>{tool.serviceName}</strong>
-                          <span>{tool.price_bucket || "unknown"}</span>
-                          <span>{tool.location || "unknown"}</span>
-                          <span>{tool.supportedPlatforms || "unknown"}</span>
-                          <a href={tool.website} target="_blank" rel="noreferrer">공식 링크</a>
+                          <strong className="tool-name">{tool.serviceName}</strong>
+                          <span className="tool-meta">요금: {tool.price_bucket || "unknown"}</span>
+                          <span className="tool-meta">지역: {tool.location || "unknown"}</span>
+                          <span className="tool-meta">플랫폼: {tool.supportedPlatforms || "unknown"}</span>
+                          <a className="tool-link" href={tool.website} target="_blank" rel="noreferrer">공식 링크</a>
                         </article>
                       ))}
                     </div>
