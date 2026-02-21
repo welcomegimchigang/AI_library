@@ -72,10 +72,19 @@ export async function onRequestPost(context) {
       why: whyMap.get(Number(t.damoa_id)) || `${t.serviceType || "관련"} 작업에 맞는 핵심 기능이 있습니다.`,
     }));
 
+    const hasAnyFilter = Boolean(filters.category || filters.use_case || filters.budget || filters.platform || filters.location);
     const fallbackText =
       state === "collecting"
-        ? "좋아요, 요청 이해했어요. 더 정확히 맞추려고 한 가지만 여쭤볼게요."
-        : `좋아요, 요청에 맞춰 ${toolsOut.length}개를 골라봤어요. 카드에서 바로 비교해보세요.`;
+        ? hasAnyFilter
+          ? "좋아요, 요청하신 조건의 일부를 확인했어요. 추천 정확도를 높이기 위해 한 가지만 더 여쭤볼게요."
+          : "안녕하세요! 저는 AI 툴 추천 챗봇입니다. 어떤 작업(예: 영상 편집, 디자인, 코딩 등)을 위한 툴을 찾고 계신가요?"
+        : `요청하신 조건에 맞춰 ${toolsOut.length}개의 툴을 골라봤어요. 카드에서 자세히 확인해보세요.`;
+
+    // 만약 필터가 전혀 없고 GPT 응답도 실패했다면, 무관한 질문으로 간주하고 툴 추천을 비움
+    if (!gpt && !hasAnyFilter) {
+      finalTools.length = 0;
+      toolsOut.length = 0;
+    }
 
     const payload = {
       reply: {
