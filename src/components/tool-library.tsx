@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Search, ExternalLink, ThumbsUp, Moon, Sun, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -43,25 +43,57 @@ export function ToolLibrary() {
     const [user, setUser] = useState<any>(null);
     const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
 
+    const [displayCount, setDisplayCount] = useState(30);
+    const observerTarget = useRef<HTMLDivElement>(null);
+
+    // 검색이나 카테고리가 바뀌면 무한 스크롤 렌더링 개수를 초기화 (Phase 9)
+    useEffect(() => {
+        setDisplayCount(30);
+    }, [searchQuery, activeCategory]);
+
+    // 무한 스크롤 옵저버 설정 (Phase 9)
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                if (entries[0].isIntersecting) {
+                    setDisplayCount(prev => prev + 30);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => {
+            if (observerTarget.current) {
+                observer.unobserve(observerTarget.current);
+            }
+        };
+    }, []);
+
     useEffect(() => {
         // 유저 세션 주기적 체크 (헤더 연동용)
         const session = getUserSession();
         setUser(session);
-        // Phase 1: Fetch data dynamically
-        fetch("/data/tools.json")
-            .then((res) => res.json())
-            .then((data: OriginalTool[]) => {
-                const mapped: Tool[] = data.map((t) => ({
-                    id: t.damoa_id,
-                    name: t.serviceName,
-                    description: t.serviceType + " - " + (t.keyFeatures_list || []).join(", "),
-                    category: inferCategory(t.serviceType),
-                    url: t.website,
-                    isFree: t.price_bucket === "free" || t.price_bucket === "freemium/paid",
-                    thumbnail: t.thumbnail,
-                }));
-                setTools(mapped);
-            });
+
+        // Phase 9: Fetch JSONL data dynamically
+        fetch("/data/tools.jsonl")
+            .then((res) => res.text())
+            .then((text) => {
+                const lines = text.split("\n").filter((line: string) => line.trim() !== "");
+                const parsedTools: Tool[] = lines.map((line: string) => {
+                    try {
+                        return JSON.parse(line);
+                    } catch (e) {
+                        return null;
+                    }
+                }).filter(Boolean);
+
+                setTools(parsedTools);
+            })
+            .catch((err) => console.error("Error loading tools jsonl:", err));
 
         // Load upvotes from localStorage
         const savedUpvotes = localStorage.getItem("ai_library_upvotes");
@@ -174,70 +206,82 @@ export function ToolLibrary() {
                     <p className="text-lg">해당하는 툴이 없습니다.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredTools.slice(0, 30).map((tool) => ( // Render top 30 to avoid perf issues
-                        <div
-                            key={tool.id}
-                            className="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                        >
-                            <div className="h-48 overflow-hidden bg-slate-100 dark:bg-slate-900 relative">
-                                <img
-                                    src={tool.thumbnail}
-                                    alt={tool.name}
-                                    loading="lazy" // Phase 5 Optimization
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.src = 'https://www.damoa.ai/default-0.png' }}
-                                />
-                                <div className="absolute top-3 left-3 flex gap-2">
-                                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm backdrop-blur-md ${tool.isFree ? 'bg-emerald-500/90' : 'bg-rose-500/90'}`}>
-                                        {tool.isFree ? '무료' : '유료'}
-                                    </span>
-                                    <span className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-700 bg-white/90 shadow-sm backdrop-blur-md">
-                                        {tool.category}
-                                    </span>
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredTools.slice(0, displayCount).map((tool) => ( // Render based on infinite scroll state
+                            <div
+                                key={tool.id}
+                                className="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                            >
+                                <div className="h-48 overflow-hidden bg-slate-100 dark:bg-slate-900 relative">
+                                    <img
+                                        src={tool.thumbnail}
+                                        alt={tool.name}
+                                        loading="lazy" // Phase 5 Optimization
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.src = 'https://www.damoa.ai/default-0.png' }}
+                                    />
+                                    <div className="absolute top-3 left-3 flex gap-2">
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm backdrop-blur-md ${tool.isFree ? 'bg-emerald-500/90' : 'bg-rose-500/90'}`}>
+                                            {tool.isFree ? '무료' : '유료'}
+                                        </span>
+                                        <span className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-700 bg-white/90 shadow-sm backdrop-blur-md">
+                                            {tool.category}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="p-5 flex flex-col flex-1">
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-1">{tool.name}</h3>
+                                    <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4 flex-1">
+                                        {tool.description}
+                                    </p>
+                                    <div className="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-700">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleUpvote(tool.id)}
+                                            className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                                        >
+                                            <ThumbsUp size={16} className="mr-2" />
+                                            추천 {upvotes[tool.id] || 0}
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                if (!getUserSession()) {
+                                                    alert("로그인이 필요한 기능입니다. 우측 상단에서 로그인해주세요.");
+                                                    return;
+                                                }
+                                                setSelectedTool(tool);
+                                            }}
+                                            className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                                        >
+                                            <MessageSquare size={16} className="mr-2" />
+                                            리뷰
+                                        </Button>
+                                        <a href={tool.url} target="_blank" rel="noreferrer">
+                                            <Button size="sm" className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600">
+                                                방문하기
+                                                <ExternalLink size={14} className="ml-2" />
+                                            </Button>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="p-5 flex flex-col flex-1">
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-1">{tool.name}</h3>
-                                <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4 flex-1">
-                                    {tool.description}
-                                </p>
-                                <div className="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-700">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleUpvote(tool.id)}
-                                        className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-                                    >
-                                        <ThumbsUp size={16} className="mr-2" />
-                                        추천 {upvotes[tool.id] || 0}
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            if (!getUserSession()) {
-                                                alert("로그인이 필요한 기능입니다. 우측 상단에서 로그인해주세요.");
-                                                return;
-                                            }
-                                            setSelectedTool(tool);
-                                        }}
-                                        className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-                                    >
-                                        <MessageSquare size={16} className="mr-2" />
-                                        리뷰
-                                    </Button>
-                                    <a href={tool.url} target="_blank" rel="noreferrer">
-                                        <Button size="sm" className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600">
-                                            방문하기
-                                            <ExternalLink size={14} className="ml-2" />
-                                        </Button>
-                                    </a>
-                                </div>
+                        ))}
+                    </div>
+
+                    {/* Infinite Scroll target (Phase 9) */}
+                    {displayCount < filteredTools.length && (
+                        <div ref={observerTarget} className="h-20 mt-8 flex items-center justify-center">
+                            <div className="animate-pulse text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-full border-2 border-slate-400 border-t-transparent animate-spin"></div>
+                                더 불러오는 중...
                             </div>
                         </div>
-                    ))}
-                </div>
+                    )}
+                </>
             )}
 
             {/* Review Modal (Phase 7 & 8) */}
