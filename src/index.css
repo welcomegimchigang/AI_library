@@ -16,3 +16,13 @@ body {
   font-family: "Inter", "Pretendard", "Noto Sans KR", sans-serif;
   color: #0f172a;
 }
+
+/* Custom Scrollbar Hiding Utility */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

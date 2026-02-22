@@ -164,6 +164,16 @@ export function ToolLibrary() {
         });
     }, [tools, searchQuery, activeCategory]);
 
+    // Phase 11: Trending Carousel Logic
+    const trendingTools = useMemo(() => {
+        // Sort by upvotes, if no upvotes, fall back to some random stable sort or top items
+        return [...tools].sort((a, b) => {
+            const upvotesA = upvotes[a.id] || 0;
+            const upvotesB = upvotes[b.id] || 0;
+            return upvotesB - upvotesA;
+        }).slice(0, 5);
+    }, [tools, upvotes]);
+
     return (
         <div className="w-full max-w-6xl mx-auto py-12 px-4 transition-colors duration-300">
             <div className="flex justify-between items-center mb-8">
@@ -174,6 +184,47 @@ export function ToolLibrary() {
                     </Button>
                 </div>
             </div>
+
+            {/* Phase 11: Trending Top 5 AI Tools */}
+            {trendingTools.length > 0 && (
+                <div className="mb-12">
+                    <h3 className="text-xl font-bold mb-4 flex items-center text-slate-800 dark:text-slate-100">
+                        <span className="text-2xl mr-2">🔥</span> 이번 주 핫한 AI 툴 TOP 5
+                    </h3>
+                    <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar">
+                        {trendingTools.map((tool, idx) => (
+                            <div key={tool.id} className="min-w-[280px] sm:min-w-[320px] bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 p-5 rounded-2xl flex-shrink-0 snap-center hover:shadow-lg transition-all cursor-pointer">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-white dark:bg-slate-950 p-2 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center">
+                                            <img
+                                                src={`https://logo.clearbit.com/${new URL(tool.url).hostname}`}
+                                                alt={tool.name}
+                                                className="w-full h-full object-contain"
+                                                onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = tool.name.charAt(0) }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                {tool.name}
+                                            </h4>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">{tool.category}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-2xl font-black text-indigo-500/20 italic">#{idx + 1}</div>
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mt-2">{tool.description}</p>
+                                <div className="mt-4 flex items-center justify-between">
+                                    <div className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">추천 {upvotes[tool.id] || 0}</div>
+                                    <a href={tool.url} target="_blank" rel="noreferrer">
+                                        <Button size="sm" variant="ghost" className="h-8 hover:bg-slate-100 dark:hover:bg-slate-700">방문하기 →</Button>
+                                    </a>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Search Bar & Filters */}
             <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -213,15 +264,15 @@ export function ToolLibrary() {
                                 key={tool.id}
                                 className="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                             >
-                                <div className="h-48 overflow-hidden bg-slate-100 dark:bg-slate-900 relative">
+                                <div className="h-48 flex items-center justify-center bg-slate-100 dark:bg-slate-900 relative p-8 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors duration-300">
                                     <img
-                                        src={tool.thumbnail}
+                                        src={`https://logo.clearbit.com/${new URL(tool.url).hostname}`}
                                         alt={tool.name}
                                         loading="lazy" // Phase 5 Optimization
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        className="max-w-full max-h-full object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-500"
                                         onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.src = 'https://www.damoa.ai/default-0.png' }}
                                     />
-                                    <div className="absolute top-3 left-3 flex gap-2">
+                                    <div className="absolute top-3 left-3 flex gap-2 z-10">
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm backdrop-blur-md ${tool.isFree ? 'bg-emerald-500/90' : 'bg-rose-500/90'}`}>
                                             {tool.isFree ? '무료' : '유료'}
                                         </span>
