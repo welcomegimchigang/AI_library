@@ -13,7 +13,7 @@ export function AboutPage() {
                         <section>
                             <h2 className="text-xl font-bold">AI Tool Library란?</h2>
                             <p>AI Tool Library는 전 세계에 흩어져 있는 수백 가지의 AI 도구들을 한 곳에 모아, 사용자의 목적에 맞는 최적의 도구를 빠르게 찾아주는 AI 기반 추천 플랫폼입니다.</p>
-                            <p className="mt-2">현재 <strong>680개 이상</strong>의 AI 도구가 등록되어 있으며, 매일 자동으로 새로운 도구가 추가되고 있습니다.</p>
+                            <p className="mt-2">다양한 AI 도구가 등록되어 있으며, 매일 자동으로 새로운 도구가 추가되고 있습니다.</p>
                         </section>
 
                         <section>

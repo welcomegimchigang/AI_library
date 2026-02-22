@@ -10,12 +10,12 @@ const features = [
   {
     icon: <Bot size={28} className="text-blue-500" />,
     title: "AI 기반 맞춤 추천",
-    desc: "AI가 질문의 의도를 분석하여, 680개+ 데이터베이스에서 최적의 도구를 즉시 선별합니다.",
+    desc: "AI가 질문의 의도를 분석하여, 데이터베이스에서 최적의 도구를 즉시 선별합니다.",
   },
   {
     icon: <Zap size={28} className="text-amber-500" />,
-    title: "실시간 자동 업데이트",
-    desc: "매일 최신의 AI 도구를 업데이트합니다. 오늘없으면 내일 찾습니다",
+    title: "실시간 업데이트",
+    desc: "엄선된 최고의 AI 도구를 업데이트합니다.",
   },
   {
     icon: <Globe size={28} className="text-emerald-500" />,
@@ -28,14 +28,9 @@ const features = [
     desc: "가격 정보와 카테고리 태그로 필요한 조건에 맞는 도구를 빠르게 필터링할 수 있습니다.",
   },
   {
-    icon: <BarChart3 size={28} className="text-rose-500" />,
-    title: "커뮤니티 추천·리뷰",
-    desc: "다른 사용자들의 추천 수와 리뷰를 참고하여 검증된 도구를 선택할 수 있습니다.",
-  },
-  {
     icon: <Search size={28} className="text-cyan-500" />,
     title: "수요 기반 자동 추가",
-    desc: "검색했으나 없는 도구는 AI가 자동으로 웹에서 찾아 다음 날 등록해 드립니다.",
+    desc: "오늘 찾는 도구가 없다면 AI가 자동으로 다음 날 등록해 드립니다.",
   },
 ];
 
@@ -48,7 +43,7 @@ const steps = [
   {
     num: "02",
     title: "AI 분석 및 추천",
-    desc: "ChatGPT가 의도를 분석하고, 680개+ 데이터베이스에서 조건에 맞는 최적의 도구를 필터링합니다.",
+    desc: "AI가 의도를 분석하고, 데이터베이스에서 조건에 맞는 최적의 도구를 필터링합니다.",
   },
   {
     num: "03",
@@ -68,7 +63,7 @@ export function HomePage() {
           <div className="mx-auto max-w-3xl text-center">
             <p className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 backdrop-blur">
               <Sparkles size={14} />
-              680+ AI Tools · 매일 자동 업데이트
+              AI Tool Library
             </p>
             <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight md:text-6xl">
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
