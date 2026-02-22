@@ -399,11 +399,14 @@ export async function loadTools(request, env) {
   if (!toolsPromise) {
     toolsPromise = (async () => {
       if (!env?.ASSETS) throw new Error("ASSETS binding unavailable");
-      const url = new URL("/data/tools.json", request.url);
+      const url = new URL("/data/tools.jsonl", request.url);
       const res = await env.ASSETS.fetch(url);
-      if (!res.ok) throw new Error(`Failed to load tools.json: ${res.status}`);
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error("tools.json is not an array");
+      if (!res.ok) throw new Error(`Failed to load tools.jsonl: ${res.status}`);
+      const text = await res.text();
+      const lines = text.split("\n").filter(l => l.trim());
+      const data = lines.map(l => {
+        try { return JSON.parse(l); } catch { return null; }
+      }).filter(Boolean);
       return data;
     })();
   }

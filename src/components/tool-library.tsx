@@ -1,22 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Search, ExternalLink, ThumbsUp, Moon, Sun, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ExternalLink, ThumbsUp, Moon, Sun, MessageSquare, ChevronLeft, ChevronRight, ArrowLeftRight, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getUserSession } from "@/lib/auth";
 import { ReviewModal } from "@/components/reviews/review-modal";
-
-interface Tool {
-    id: number;
-    name: string;
-    description: string;
-    category: string;
-    url: string;
-    isFree: boolean;
-    thumbnail: string;
-}
-
-const ITEMS_PER_PAGE = 30;
+import { useTools, Tool } from "@/contexts/tool-context";
 
 const LOGO_COLORS = [
     "from-blue-500 to-indigo-600",
@@ -67,32 +56,22 @@ function ToolLogo({ url, name }: { url: string; name: string }) {
 }
 
 export function ToolLibrary() {
-    const [tools, setTools] = useState<Tool[]>([]);
+    const { tools, loading: toolsLoading, compareIds, toggleCompare, clearCompare } = useTools();
     const [searchQuery, setSearchQuery] = useState("");
     const [activeCategory, setActiveCategory] = useState("전체");
-    const [upvotes, setUpvotes] = useState<Record<number, number>>({});
+    const [upvotes, setUpvotes] = useState<{ [key: number]: number }>({});
     const [isDarkMode, setIsDarkMode] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-
     const [user, setUser] = useState<any>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 9;
     const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+    const [showCompareModal, setShowCompareModal] = useState(false);
 
     useEffect(() => { setCurrentPage(1); }, [searchQuery, activeCategory]);
 
     useEffect(() => {
         const session = getUserSession();
         setUser(session);
-
-        fetch("/data/tools.jsonl")
-            .then((res) => res.text())
-            .then((text) => {
-                const lines = text.split("\n").filter((line: string) => line.trim() !== "");
-                const parsedTools: Tool[] = lines.map((line: string) => {
-                    try { return JSON.parse(line); } catch { return null; }
-                }).filter(Boolean);
-                setTools(parsedTools);
-            })
-            .catch((err) => console.error("Error loading tools jsonl:", err));
 
         // D1에서 추천 수 로드 (실패 시 localStorage 폴백)
         fetch("/api/db/upvotes?all=true")
@@ -160,8 +139,8 @@ export function ToolLibrary() {
         });
     }, [tools, searchQuery, activeCategory]);
 
-    const totalPages = Math.ceil(filteredTools.length / ITEMS_PER_PAGE);
-    const paginatedTools = filteredTools.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredTools.length / itemsPerPage);
+    const paginatedTools = filteredTools.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const trendingTools = useMemo(() => {
         return [...tools].sort((a, b) => (upvotes[b.id] || 0) - (upvotes[a.id] || 0)).slice(0, 5);
@@ -257,7 +236,11 @@ export function ToolLibrary() {
             </div>
 
             {/* Grid */}
-            {filteredTools.length === 0 ? (
+            {toolsLoading ? (
+                <div className="flex justify-center py-20">
+                    <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+                </div>
+            ) : filteredTools.length === 0 ? (
                 <div className="text-center py-20 text-slate-500 dark:text-slate-400">
                     <p className="text-lg">해당하는 툴이 없습니다.</p>
                 </div>
@@ -278,6 +261,17 @@ export function ToolLibrary() {
                                         <span className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-700 bg-white/90 shadow-sm backdrop-blur-md dark:text-slate-800">
                                             {tool.category}
                                         </span>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                toggleCompare(tool.id);
+                                            }}
+                                            className={`p-1.5 rounded-full shadow-sm backdrop-blur-md transition-all ${compareIds.includes(tool.id) ? 'bg-blue-600 text-white scale-110' : 'bg-white/90 text-slate-600 hover:bg-blue-50'}`}
+                                            title="비교하기 추가"
+                                        >
+                                            <ArrowLeftRight size={14} />
+                                        </button>
                                     </div>
                                 </Link>
                                 <div className="p-5 flex flex-col flex-1">
@@ -309,45 +303,148 @@ export function ToolLibrary() {
                         ))}
                     </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-center gap-2 mt-10">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={currentPage === 1}
-                                onClick={() => { setCurrentPage(p => p - 1); scrollToLibrary(); }}
-                                className="rounded-full border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-200"
-                            >
-                                <ChevronLeft size={16} />
-                            </Button>
-                            {getPageNumbers().map((page, i) =>
-                                typeof page === "string" ? (
-                                    <span key={`dots-${i}`} className="px-2 text-slate-400 dark:text-slate-500">...</span>
-                                ) : (
-                                    <Button
-                                        key={page}
-                                        variant={currentPage === page ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => { setCurrentPage(page); scrollToLibrary(); }}
-                                        className={`rounded-full min-w-[36px] ${currentPage === page ? 'bg-blue-600 text-white' : 'border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-200'}`}
-                                    >
-                                        {page}
-                                    </Button>
-                                )
-                            )}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={currentPage === totalPages}
-                                onClick={() => { setCurrentPage(p => p + 1); scrollToLibrary(); }}
-                                className="rounded-full border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-200"
-                            >
-                                <ChevronRight size={16} />
+                </>
+            )}
+
+            {/* Pagination */}
+            {filteredTools.length > itemsPerPage && (
+                <div className="flex justify-center items-center gap-2 mt-12 mb-20">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setCurrentPage(prev => Math.max(1, prev - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                        disabled={currentPage === 1}
+                        className="rounded-full w-10 h-10 p-0"
+                    >
+                        <ChevronLeft size={20} />
+                    </Button>
+                    {getPageNumbers().map((page, i) => (
+                        <Button
+                            key={i}
+                            variant={currentPage === page ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => { if (typeof page === "number") { setCurrentPage(page); window.scrollTo({ top: 0, behavior: "smooth" }); } }}
+                            className={`rounded-full w-10 h-10 p-0 ${currentPage === page ? 'bg-blue-600 text-white' : ''}`}
+                            disabled={typeof page !== "number"}
+                        >
+                            {page}
+                        </Button>
+                    ))}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setCurrentPage(prev => Math.min(totalPages, prev + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                        disabled={currentPage === totalPages}
+                        className="rounded-full w-10 h-10 p-0"
+                    >
+                        <ChevronRight size={20} />
+                    </Button>
+                </div>
+            )}
+
+            {/* Floating Compare Bar */}
+            {compareIds.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-blue-200 dark:border-slate-700 p-4 animate-in slide-in-from-bottom-10 duration-300">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{compareIds.length}개 선택됨</span>
+                            <div className="flex gap-2">
+                                {compareIds.map(id => {
+                                    const t = tools.find(tool => tool.id === id);
+                                    let host = "";
+                                    try { if (t) host = new URL(t.url).hostname; } catch { }
+                                    return (
+                                        <div key={id} className="relative w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center p-1 group">
+                                            {host && <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`} alt="" className="w-full h-full object-contain" />}
+                                            <button onClick={() => toggleCompare(id)} className="absolute -top-1.5 -right-1.5 bg-slate-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <X size={8} />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="ghost" size="sm" onClick={clearCompare} className="text-slate-500 text-xs h-8">초기화</Button>
+                            <Button size="sm" onClick={() => setShowCompareModal(true)} disabled={compareIds.length < 2} className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 h-8 font-bold shadow-md shadow-blue-200">
+                                비교하기
                             </Button>
                         </div>
-                    )}
-                </>
+                    </div>
+                </div>
+            )}
+
+            {/* Compare Modal */}
+            {showCompareModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                            <h3 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                                <ArrowLeftRight className="text-blue-600" /> AI 도구 비교
+                            </h3>
+                            <button onClick={() => setShowCompareModal(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
+                        </div>
+                        <div className="p-6 overflow-x-auto overflow-y-auto flex-1">
+                            <table className="w-full border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th className="p-4 text-left border-b border-slate-100 dark:border-slate-800 w-32 text-slate-500 text-sm">항목</th>
+                                        {compareIds.map(id => {
+                                            const t = tools.find(tool => tool.id === id);
+                                            let host = "";
+                                            try { if (t) host = new URL(t.url).hostname; } catch { }
+                                            return (
+                                                <th key={id} className="p-4 border-b border-slate-100 dark:border-slate-800 min-w-[200px]">
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 p-2 flex items-center justify-center">
+                                                            {host && <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=64`} alt="" className="w-full h-full object-contain" />}
+                                                        </div>
+                                                        <span className="font-bold text-slate-900 dark:text-white text-base">{t?.name}</span>
+                                                    </div>
+                                                </th>
+                                            );
+                                        })}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr className="bg-slate-50/30 dark:bg-slate-800/20">
+                                        <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">카테고리</td>
+                                        {compareIds.map(id => <td key={id} className="p-4 text-center border-b border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300">{tools.find(t => t.id === id)?.category}</td>)}
+                                    </tr>
+                                    <tr>
+                                        <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">가격 모델</td>
+                                        {compareIds.map(id => <td key={id} className="p-4 text-center border-b border-slate-100 dark:border-slate-800">
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${tools.find(t => t.id === id)?.isFree ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                                {tools.find(t => t.id === id)?.isFree ? '무료' : '유료'}
+                                            </span>
+                                        </td>)}
+                                    </tr>
+                                    <tr className="bg-slate-50/30 dark:bg-slate-800/20">
+                                        <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">기능 설명</td>
+                                        {compareIds.map(id => <td key={id} className="p-4 text-sm text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 align-top line-clamp-4">{tools.find(t => t.id === id)?.description}</td>)}
+                                    </tr>
+                                    <tr>
+                                        <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">추천 수</td>
+                                        {compareIds.map(id => <td key={id} className="p-4 text-center border-b border-slate-100 dark:border-slate-800 font-black text-blue-600 dark:text-blue-400 text-lg">{upvotes[id] || 0}</td>)}
+                                    </tr>
+                                    <tr className="bg-slate-100/50 dark:bg-slate-800/50">
+                                        <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider">링크</td>
+                                        {compareIds.map(id => (
+                                            <td key={id} className="p-4 text-center">
+                                                <a href={tools.find(t => t.id === id)?.url} target="_blank" rel="noreferrer">
+                                                    <Button variant="default" size="sm" className="w-full bg-slate-900 text-white dark:bg-blue-600">방문하기</Button>
+                                                </a>
+                                            </td>
+                                        ))}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex justify-center">
+                            <Button onClick={() => setShowCompareModal(false)} className="bg-slate-900 text-white dark:bg-slate-800 rounded-full px-10 h-10 font-bold">비교창 닫기</Button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Review Modal */}

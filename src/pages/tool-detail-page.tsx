@@ -6,19 +6,11 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { getUserSession } from "@/lib/auth";
 import { ReviewModal } from "@/components/reviews/review-modal";
-
-interface Tool {
-    id: number;
-    name: string;
-    description: string;
-    category: string;
-    url: string;
-    isFree: boolean;
-    thumbnail: string;
-}
+import { useTools, Tool } from "@/contexts/tool-context";
 
 export function ToolDetailPage() {
     const { id } = useParams<{ id: string }>();
+    const { tools, loading: toolsLoading } = useTools();
     const [tool, setTool] = useState<Tool | null>(null);
     const [loading, setLoading] = useState(true);
     const [upvotes, setUpvotes] = useState(0);
@@ -27,37 +19,33 @@ export function ToolDetailPage() {
     const [relatedTools, setRelatedTools] = useState<Tool[]>([]);
 
     useEffect(() => {
-        fetch("/data/tools.jsonl")
-            .then(res => res.text())
-            .then(text => {
-                const lines = text.split("\n").filter(l => l.trim());
-                const allTools: Tool[] = lines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-                const found = allTools.find(t => String(t.id) === id);
-                setTool(found || null);
+        if (toolsLoading) return;
 
-                if (found) {
-                    const related = allTools.filter(t => t.category === found.category && t.id !== found.id).slice(0, 6);
-                    setRelatedTools(related);
+        const found = tools.find(t => String(t.id) === id);
+        setTool(found || null);
 
-                    // D1에서 추천 수 로드
-                    fetch(`/api/db/upvotes?tool_id=${found.id}`)
-                        .then(r => r.json())
-                        .then(d => { if (d.success) setUpvotes(d.count || 0); })
-                        .catch(() => { });
+        if (found) {
+            const related = tools.filter(t => t.category === found.category && t.id !== found.id).slice(0, 6);
+            setRelatedTools(related);
 
-                    // D1에서 북마크 상태 로드
-                    const session = getUserSession();
-                    if (session) {
-                        const email = session.email || session.sub || "";
-                        fetch(`/api/db/bookmarks?user_email=${encodeURIComponent(email)}`)
-                            .then(r => r.json())
-                            .then(d => { if (d.success) setIsBookmarked(d.bookmarks.includes(found.id)); })
-                            .catch(() => { });
-                    }
-                }
-                setLoading(false);
-            });
-    }, [id]);
+            // D1에서 추천 수 로드
+            fetch(`/api/db/upvotes?tool_id=${found.id}`)
+                .then(r => r.json())
+                .then(d => { if (d.success) setUpvotes(d.count || 0); })
+                .catch(() => { });
+
+            // D1에서 북마크 상태 로드
+            const session = getUserSession();
+            if (session) {
+                const email = session.email || session.sub || "";
+                fetch(`/api/db/bookmarks?user_email=${encodeURIComponent(email)}`)
+                    .then(r => r.json())
+                    .then(d => { if (d.success) setIsBookmarked(d.bookmarks.includes(found.id)); })
+                    .catch(() => { });
+            }
+        }
+        setLoading(false);
+    }, [id, tools, toolsLoading]);
 
     const handleUpvote = async () => {
         if (!tool) return;

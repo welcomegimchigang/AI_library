@@ -34,9 +34,10 @@ export async function onRequestPost(context) {
     const body = await request.json();
     const message = String(body?.message || "").trim();
     const prevFilters = body?.filters && typeof body.filters === "object" ? body.filters : {};
+    const history = Array.isArray(body?.history) ? body.history : [];
 
     // 1. AI에게 의도(Intent) 파악 및 필터 추출 요청
-    const gpt = await generateChatLayerWithGpt(env, { message });
+    const gpt = await generateChatLayerWithGpt(env, { message, history });
 
     // 2. Case A: 무관한 질문이거나 프롬프트 응답 실패 (매크로 1)
     if (!gpt || gpt.intent === "off_topic") {
