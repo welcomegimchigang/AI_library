@@ -120,14 +120,19 @@ function scoreByQuery(tool, q) {
   return score;
 }
 
+function getKoreanBase(w) {
+  return text(w).replace(/(용|하기|해주는|하는|를|을|에|의|가|은|는|도|으로|로)$/, '');
+}
+
 function matchCategory(tool, category) {
   if (!category) return true;
   const c = text(category);
   const hay = [tool.serviceType, ...(tool.keyFeatures_list || []), tool.serviceName].map(text).join(" ");
   if (hay.includes(c)) return true;
-  const rule = CATEGORY_RULES.find((r) => text(r.id) === c);
+
+  const rule = CATEGORY_RULES.find((r) => text(r.id).includes(c) || r.keywords.some(k => c.includes(text(k))));
   if (!rule) return false;
-  return rule.keywords.some((kw) => hay.includes(text(kw)));
+  return rule.keywords.some((kw) => hay.includes(text(kw))) || hay.includes(text(rule.id));
 }
 
 function matchBudget(tool, budget) {
@@ -161,9 +166,13 @@ const STOP_WORDS = new Set(["ai", "알려줘", "알려", "찾아줘", "찾아", 
 function matchQ(tool, q) {
   if (!q) return true;
   const words = text(q).split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
-  if (words.length === 0) return false;
+  if (words.length === 0) return true;
   const hay = [tool.serviceName, tool.serviceType, ...(tool.keyFeatures_list || [])].map(text).join(" ");
-  return words.some((w) => hay.includes(w));
+
+  return words.some(w => {
+    const baseW = getKoreanBase(w);
+    return hay.includes(w) || (baseW.length >= 2 && hay.includes(baseW));
+  });
 }
 
 export function filterTools(tools, filters = {}, limit = 5) {
@@ -221,7 +230,8 @@ export function parseMessageToFilters(message) {
 }
 
 function categoryKeywords(category = "") {
-  const found = CATEGORY_RULES.find((x) => x.id === category);
+  const c = text(category);
+  const found = CATEGORY_RULES.find((x) => text(x.id).includes(c) || x.keywords.some(k => c.includes(text(k))));
   return found ? found.keywords : [];
 }
 
@@ -251,11 +261,23 @@ function scoreTool(tool, filters, message) {
     const kws = categoryKeywords(f.category);
     if (type.includes(text(f.category)) || kws.some((k) => type.includes(text(k)))) score += 3;
   }
-  for (const w of msgWords) {
-    if (name.includes(text(w))) score += 2;
-    if (type.includes(text(w))) score += 3;
-    if (features.includes(text(w))) score += 2;
+
+  if (f.q) {
+    const qWords = text(f.q).split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
+    for (const w of qWords) {
+      const baseW = getKoreanBase(w);
+      if (baseW.length >= 2 && all.includes(baseW)) score += 5;
+      else if (all.includes(w)) score += 3;
+    }
   }
+
+  for (const w of msgWords) {
+    const baseW = getKoreanBase(w);
+    if (name.includes(w) || (baseW.length >= 2 && name.includes(baseW))) score += 2;
+    if (type.includes(w) || (baseW.length >= 2 && type.includes(baseW))) score += 3;
+    if (features.includes(w) || (baseW.length >= 2 && features.includes(baseW))) score += 2;
+  }
+
   if (f.use_case && all.includes(text(f.use_case))) score += 2;
   if (f.budget && matchBudget(tool, f.budget)) score += 2;
   if (f.platform && matchPlatform(tool, f.platform)) score += 2;
@@ -273,10 +295,8 @@ export function rankTools(tools, filters = {}, message = "", limit = 8) {
     .filter((tool) => (!f.budget ? true : matchBudget(tool, f.budget)))
     .filter((tool) => (!f.platform ? true : matchPlatform(tool, f.platform)))
     .filter((tool) => (!f.location ? true : matchLocation(tool, f.location)))
-    // 검색어가 있다면 무조건 포함해야 함
     .filter((tool) => (!f.q ? true : matchQ(tool, f.q)))
     .map((tool) => ({ tool, score: scoreTool(tool, f, message) }))
-    // 명확한 검색어(q)나 카테고리가 있는데 스코어가 0이면 아예 연관 없는 것이므로 버림
     .filter((x) => {
       const hasSpecificFilter = Boolean(f.q || f.category);
       if (hasSpecificFilter && x.score === 0) return false;
@@ -284,11 +304,6 @@ export function rankTools(tools, filters = {}, message = "", limit = 8) {
     })
     .sort((a, b) => b.score - a.score || text(b.tool.releaseDate).localeCompare(text(a.tool.releaseDate)))
     .map((x) => x.tool);
-
-  // 검색어나 카테고리가 명확한데 strict 결과가 비어있다면, 억지로 broad를 보여주지 않고 빈 배열 리턴
-  if ((f.q || f.category) && strict.length === 0) {
-    return [];
-  }
 
   // 사용자가 찾고자 하는 구체적인 의도(q, category, use_case)가 아예 추출되지 않았다면 (예: "음악추천"을 GPT가 명사로 못 뽑은 경우)
   // 아무 쓸모없는 랜덤 사이트(법률 등)를 던져주지 마라.
