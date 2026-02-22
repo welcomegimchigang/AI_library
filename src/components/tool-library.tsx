@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Search, ExternalLink, ThumbsUp, Moon, Sun, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getUserSession } from "@/lib/auth";
@@ -250,7 +251,7 @@ export function ToolLibrary() {
                                 key={tool.id}
                                 className="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                             >
-                                <div className="h-48 flex items-center justify-center bg-slate-100 dark:bg-slate-900 relative p-8 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors duration-300">
+                                <Link to={`/tool/${tool.id}`} className="h-48 flex items-center justify-center bg-slate-100 dark:bg-slate-900 relative p-8 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-colors duration-300 cursor-pointer">
                                     <ToolLogo url={tool.url} name={tool.name} />
                                     <div className="absolute top-3 left-3 flex gap-2 z-10">
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm backdrop-blur-md ${tool.isFree ? 'bg-emerald-500/90' : 'bg-rose-500/90'}`}>
@@ -260,9 +261,9 @@ export function ToolLibrary() {
                                             {tool.category}
                                         </span>
                                     </div>
-                                </div>
+                                </Link>
                                 <div className="p-5 flex flex-col flex-1">
-                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-1">{tool.name}</h3>
+                                    <Link to={`/tool/${tool.id}`} className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-1 hover:text-blue-600 transition-colors">{tool.name}</Link>
                                     <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4 flex-1">
                                         {tool.description}
                                     </p>
