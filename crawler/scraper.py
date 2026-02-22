@@ -1,54 +1,76 @@
 import os
 import json
-import urllib.request
-import time
 import random
+import requests
+import re
+from deep_translator import GoogleTranslator
 
-# A mock scraper that demonstrates how we would pull data from an API or HTML
-# In a real environment, we would use BeautifulSoup or cloud APIs like Apify.
-# Here we simulate fetching 5 new trending tools from a generic AI directory.
+# Target Open-Source Database (Daily updated by AI community)
+AWESOME_LIST_URL = "https://raw.githubusercontent.com/steven2358/awesome-generative-ai/main/README.md"
 
-def fetch_trending_tools():
-    print("[Scraper] Fetching latest trending AI tools from directories...")
-    time.sleep(1.5) # Simulate network request
-    
-    # Mocked data from a global directory (e.g. ProductHunt or TheresAnAIForThat)
-    scraped_data = [
-        {"name": "Viggle AI", "type": "비디오 생성", "desc": "Make any character move however you want. Comical AI motion generation.", "url": "https://viggle.ai", "pricing": "free"},
-        {"name": "Gamma App", "type": "프레젠테이션", "desc": "A new medium for presenting ideas. Not a slide deck.", "url": "https://gamma.app", "pricing": "freemium/paid"},
-        {"name": "Devin", "type": "소프트웨어 엔지니어링", "desc": "The first AI software engineer that can code whole setups.", "url": "https://cognition.ai", "pricing": "paid"},
-        {"name": "Udio", "type": "음악 생성", "desc": "Create extraordinary music in seconds. Unbelievable vocal clarity.", "url": "https://udio.com", "pricing": "freemium/paid"},
-        {"name": "Suno", "type": "음악", "desc": "Make a song about anything.", "url": "https://suno.com", "pricing": "freemium/paid"}
-    ]
-    print(f"[Scraper] Found {len(scraped_data)} new AI tools trending today.")
-    return scraped_data
+def fetch_trending_tools(limit=5):
+    print(f"[Scraper] Fetching latest AI tools from GitHub Awesome List...")
+    try:
+        response = requests.get(AWESOME_LIST_URL, timeout=10)
+        response.raise_for_status()
+        content = response.text
+        
+        # Regex to find standard Markdown links with descriptions
+        # e.g., "- [Tool Name](https://link.com) - A cool description."
+        pattern = r'^[-*]\s+\[(.*?)\]\((http.*?)\)\s*[-:]?\s*(.*)$'
+        matches = re.findall(pattern, content, re.MULTILINE)
+        
+        if not matches:
+            print("[Scraper] Warning: Could not parse any tools with regex.")
+            return []
+            
+        print(f"[Scraper] Successfully parsed {len(matches)} AI resources from open source.")
+        
+        # Pick a random sample of `limit` tools
+        chosen_matches = random.sample(matches, min(len(matches), limit))
+        
+        scraped_data = []
+        for name, url, desc in chosen_matches:
+            scraped_data.append({
+                "name": name.strip(),
+                "url": url.strip(),
+                "desc": desc.strip('[]*` '), # Clean up trailing markdown artifacts
+                "type": "기타", # Default category, can be refined later
+                "pricing": "freemium/paid" 
+            })
+            
+        return scraped_data
+        
+    except Exception as e:
+        print(f"[ScraperError] Failed to fetch data: {e}")
+        return []
 
 def translate_to_korean(text):
-    # In production, we'd hook this to DeepL API or OpenAI API wrapper.
-    # For now, we mock the translation map to demonstrate the pipeline.
-    translations = {
-        "Make any character move however you want. Comical AI motion generation.": "캐릭터를 원하는 대로 움직이게 만듭니다. 재미있는 AI 모션 생성.",
-        "A new medium for presenting ideas. Not a slide deck.": "아이디어를 퍼블리싱하는 새로운 매체, 단순한 슬라이드가 아닙니다.",
-        "The first AI software engineer that can code whole setups.": "전체 셋업을 코딩할 수 있는 세계 최초의 AI 소프트웨어 엔지니어.",
-        "Create extraordinary music in seconds. Unbelievable vocal clarity.": "놀라운 음질과 선명한 보컬로 단 몇 초 만에 엄청난 음악 생성.",
-        "Make a song about anything.": "무엇이든 주제로 노래를 만들어보세요."
-    }
-    return translations.get(text, text)
+    if not text or len(text.strip()) == 0:
+        return "설명 없음"
+    try:
+        translator = GoogleTranslator(source='en', target='ko')
+        # Google Translator block limit/rate limit protection
+        # For small sentences, direct translation is fine.
+        translated = translator.translate(text)
+        return translated
+    except Exception as e:
+        print(f"[TranslatorError] Translation failed for text '{text[:20]}...': {e}")
+        return text
 
 def export_to_jsonl(tools, output_file):
-    print("[Translator] Translating descriptions to Korean...")
+    print(f"[Translator] Translating {len(tools)} descriptions to Korean using deep-translator...")
     
     formatted_data = []
-    # Convert to match original tools.jsonl schema: damoa_id, serviceName, serviceType, website, price_bucket, keyFeatures_list
-    for idx, t in enumerate(tools):
+    for t in tools:
         translated_desc = translate_to_korean(t["desc"])
         formatted = {
-            "damoa_id": random.randint(1500, 99999),  # Give random big ID for new items
-            "serviceName": t["name"],
-            "serviceType": t["type"],
-            "website": t["url"],
-            "price_bucket": t["pricing"],
-            "keyFeatures_list": [translated_desc],
+            "id": random.randint(1500, 99999), 
+            "name": t["name"],
+            "description": translated_desc,
+            "category": t["type"],
+            "url": t["url"],
+            "isFree": False, # Basic assumption
             "thumbnail": f"https://logo.clearbit.com/{t['url'].replace('https://', '').replace('http://', '').split('/')[0]}"
         }
         formatted_data.append(formatted)
@@ -63,5 +85,8 @@ def export_to_jsonl(tools, output_file):
 
 if __name__ == "__main__":
     TARGET_JSONL = os.path.join("public", "data", "tools.jsonl")
-    data = fetch_trending_tools()
-    export_to_jsonl(data, TARGET_JSONL)
+    data = fetch_trending_tools(limit=50) # Set back to 50 for daily background scraping
+    if data:
+        export_to_jsonl(data, TARGET_JSONL)
+    else:
+        print("[Exit] No data scraped today.")
