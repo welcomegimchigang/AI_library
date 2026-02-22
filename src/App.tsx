@@ -7,6 +7,7 @@ import { TermsPage } from "@/pages/terms-page";
 import { AboutPage } from "@/pages/about-page";
 import { NotFoundPage } from "@/pages/not-found-page";
 import { ToolDetailPage } from "@/pages/tool-detail-page";
+import { AdminPage } from "@/pages/admin-page";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/about" element={<AboutPage />} />
+      <Route path="/admin" element={<AdminPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

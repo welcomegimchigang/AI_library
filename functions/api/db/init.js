@@ -49,11 +49,23 @@ export async function onRequest(context) {
       )
     `).run();
 
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS search_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_query TEXT NOT NULL,
+        gpt_intent TEXT NOT NULL,
+        gpt_filters TEXT NOT NULL,
+        matched_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `).run();
+
     await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_reviews_tool ON reviews(tool_id)").run();
     await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_upvotes_tool ON upvotes(tool_id)").run();
     await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks(user_email)").run();
+    await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_search_logs_created ON search_logs(created_at)").run();
 
-    return Response.json({ success: true, message: "All tables created" });
+    return Response.json({ success: true, message: "All tables created, including search_logs" });
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 });
   }

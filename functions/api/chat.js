@@ -62,10 +62,29 @@ export async function onRequestPost(context) {
     // DB 로드 및 검색
     const tools = await loadTools(request, env);
     const rankedTools = rankTools(tools, filters, message, 5);
+    const matchedCount = rankedTools.length;
 
-    // 4. Case B-1: 매칭되는 툴이 없는 경우
-    if (rankedTools.length === 0) {
-      // KV DB에 실패한 검색어 저장
+    // 4. [NEW] D1에 유저 검색 로그 저장 (비동기로 백그라운드 처리)
+    if (env.DB) {
+      context.waitUntil(
+        env.DB.prepare(`
+          INSERT INTO search_logs (user_query, gpt_intent, gpt_filters, matched_count)
+          VALUES (?, ?, ?, ?)
+        `)
+          .bind(
+            message.slice(0, 500),
+            gpt.intent || "unknown",
+            JSON.stringify(gpt.filters || {}),
+            matchedCount
+          )
+          .run()
+          .catch(e => console.error("Failed to log search query to D1:", e))
+      );
+    }
+
+    // 5. Case B-1: 매칭되는 툴이 없는 경우
+    if (matchedCount === 0) {
+      // (기존) KV DB에 실패한 검색어 저장 및 Discord 알림 로직 유지
       if (env.MISSING_TOOLS_KV) {
         const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         context.waitUntil(
@@ -79,32 +98,25 @@ export async function onRequestPost(context) {
         );
       }
 
-      // Discord 웹훅 알림
       if (env.DISCORD_WEBHOOK_URL) {
         context.waitUntil(
           fetch(env.DISCORD_WEBHOOK_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `🚨 **AI 툴 검색 실패 건 발생**\n- 유저 입력: \`${message}\`\n- GPT 분석 의도: \`${gpt?.intent}\`\n- 설명: Cloudflare KV DB에 방금 적재되었으며, 오늘 자정 파이썬 봇이 자동으로 해당 툴을 수사하여 DB에 채워 넣습니다! 🤖`
+              content: `🚨 **AI 툴 검색 실패 건 발생**\n- 유저 입력: \`${message}\`\n- GPT 분석 의도: \`${gpt?.intent}\`\n- 설명: Cloudflare D1 \`search_logs\` 및 KV DB에 적재되었습니다.`
             })
           }).catch(undefined)
         );
       }
 
       return Response.json({
-        reply: {
-          text: "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다.",
-        },
-        state: "refining",
-        missing: [],
-        quickReplies: defaultQuickReplies(filters, []),
-        filters,
-        tools: [],
+        reply: { text: "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다." },
+        state: "refining", missing: [], quickReplies: defaultQuickReplies(filters, []), filters, tools: [],
       });
     }
 
-    // 5. Case B-2: 매칭되는 툴이 있는 경우
+    // 6. Case B-2: 매칭되는 툴이 있는 경우
     const toolsOut = rankedTools.map((t) => ({
       damoa_id: t.damoa_id,
       serviceName: t.serviceName,
