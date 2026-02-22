@@ -27,11 +27,18 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests deep-translator duckduckgo-search openai
 
       # 1. 크롤러 동작으로 JSONL 데이터를 다운받고 번역해 추가
       - name: Run Scraper Bot
         run: python crawler/scraper.py
+
+      # 1.5 유저가 실패한 검색어를 KV에서 읽어와 스스로 웹검색 후 추가하는 자동 요원 가동
+      - name: Run AI Auto-Resolver
+        env:
+          KV_API_SECRET: ${{ secrets.KV_API_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python crawler/auto_resolver.py
 
       # 2. 중복된 데이터 및 이름들을 제거하고 내림차순 정렬 (Janitor Bot)
       - name: Run Clean DB Script
