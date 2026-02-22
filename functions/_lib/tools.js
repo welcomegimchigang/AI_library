@@ -395,6 +395,30 @@ export function setChatCache(key, value) {
   chatCache.set(key, value);
 }
 
+function normalizeTool(rawTool) {
+  if (!rawTool) return null;
+  // If it already looks like a normalized tool (has damoa_id / serviceName), return AS-IS
+  if (rawTool.serviceName !== undefined && rawTool.damoa_id !== undefined) {
+    return rawTool;
+  }
+
+  // Handle newly scraped tools from auto-scraper (using short keys like 'name', 'type', 'url')
+  const priceBucket = rawTool.isFree ? "free" : (rawTool.pricing === "free" || rawTool.pricing === "freemium/paid" ? rawTool.pricing : "unknown");
+
+  return {
+    damoa_id: rawTool.id || Math.floor(Math.random() * 100000),
+    serviceName: String(rawTool.name || "").trim(),
+    website: String(rawTool.url || "").trim(),
+    serviceType: String(rawTool.category || rawTool.type || "").trim(),
+    location: "해외", // Scraped from awesome list are mostly global
+    keyFeatures_list: [String(rawTool.description || "")],
+    price_bucket: priceBucket,
+    supportedPlatforms: "web", // Safe default
+    thumbnail: String(rawTool.thumbnail || ""),
+    releaseDate: new Date().toISOString()
+  };
+}
+
 export async function loadTools(request, env) {
   if (!toolsPromise) {
     toolsPromise = (async () => {
@@ -405,7 +429,12 @@ export async function loadTools(request, env) {
       const text = await res.text();
       const lines = text.split("\n").filter(l => l.trim());
       const data = lines.map(l => {
-        try { return JSON.parse(l); } catch { return null; }
+        try {
+          const parsed = JSON.parse(l);
+          return normalizeTool(parsed);
+        } catch {
+          return null;
+        }
       }).filter(Boolean);
       return data;
     })();
