@@ -5,18 +5,30 @@ export async function onRequest(context) {
     const action = url.searchParams.get("action"); // 'list' or 'delete'
     const key = url.searchParams.get("key");
 
-    // 아주 간단한 보안: 내 파이썬 스크립트만 접근할 수 있게 암호화 키 확인
-    if (!env.KV_API_SECRET || secret !== env.KV_API_SECRET) {
-        return new Response("Unauthorized", { status: 401 });
+    // 디버그: env에 KV_API_SECRET가 설정되어 있는지 확인
+    if (!env.KV_API_SECRET) {
+        return Response.json({
+            error: "KV_API_SECRET not configured",
+            hint: "Cloudflare Pages > Settings > Environment Variables 에 KV_API_SECRET 을 추가해주세요.",
+            envKeys: Object.keys(env).filter(k => !k.startsWith("__"))
+        }, { status: 500 });
+    }
+
+    // 비밀번호 대조
+    if (secret !== env.KV_API_SECRET) {
+        return new Response("Unauthorized: secret mismatch", { status: 401 });
     }
 
     if (!env.MISSING_TOOLS_KV) {
-        return new Response("KV not bound", { status: 500 });
+        return Response.json({
+            error: "KV not bound",
+            hint: "Cloudflare Pages > Settings > Bindings 에서 MISSING_TOOLS_KV 를 바인딩해주세요.",
+            envKeys: Object.keys(env).filter(k => !k.startsWith("__"))
+        }, { status: 500 });
     }
 
     if (action === "list") {
         try {
-            // prefix 'missing_'인 키들을 가져옵니다.
             const listed = await env.MISSING_TOOLS_KV.list({ prefix: "missing_" });
             let results = [];
             for (const k of listed.keys) {
