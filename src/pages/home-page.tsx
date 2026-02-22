@@ -10,12 +10,12 @@ const features = [
   {
     icon: <Bot size={28} className="text-blue-500" />,
     title: "AI 기반 맞춤 추천",
-    desc: "ChatGPT가 질문의 의도를 분석하여, 680개+ 데이터베이스에서 최적의 도구를 즉시 선별합니다.",
+    desc: "AI가 질문의 의도를 분석하여, 680개+ 데이터베이스에서 최적의 도구를 즉시 선별합니다.",
   },
   {
     icon: <Zap size={28} className="text-amber-500" />,
     title: "실시간 자동 업데이트",
-    desc: "매일 새벽 AI 에이전트가 최신 도구를 자동으로 수집·번역·등록합니다. 수동 관리가 필요 없습니다.",
+    desc: "매일 최신의 AI 도구를 업데이트합니다. 오늘없으면 내일 찾습니다",
   },
   {
     icon: <Globe size={28} className="text-emerald-500" />,
