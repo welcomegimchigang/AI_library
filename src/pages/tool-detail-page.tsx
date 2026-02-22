@@ -39,45 +39,59 @@ export function ToolDetailPage() {
                     const related = allTools.filter(t => t.category === found.category && t.id !== found.id).slice(0, 6);
                     setRelatedTools(related);
 
-                    const savedUpvotes = JSON.parse(localStorage.getItem("ai_library_upvotes") || "{}");
-                    setUpvotes(savedUpvotes[found.id] || 0);
+                    // D1에서 추천 수 로드
+                    fetch(`/api/db/upvotes?tool_id=${found.id}`)
+                        .then(r => r.json())
+                        .then(d => { if (d.success) setUpvotes(d.count || 0); })
+                        .catch(() => { });
 
-                    const bookmarks: number[] = JSON.parse(localStorage.getItem("ai_library_bookmarks") || "[]");
-                    setIsBookmarked(bookmarks.includes(found.id));
+                    // D1에서 북마크 상태 로드
+                    const session = getUserSession();
+                    if (session) {
+                        const email = session.email || session.sub || "";
+                        fetch(`/api/db/bookmarks?user_email=${encodeURIComponent(email)}`)
+                            .then(r => r.json())
+                            .then(d => { if (d.success) setIsBookmarked(d.bookmarks.includes(found.id)); })
+                            .catch(() => { });
+                    }
                 }
                 setLoading(false);
             });
     }, [id]);
 
-    const handleUpvote = () => {
+    const handleUpvote = async () => {
         if (!tool) return;
         const session = getUserSession();
         if (!session) { alert("로그인이 필요합니다."); return; }
-        const today = new Date().toLocaleDateString();
-        const key = `upvote_${session.sub || session.email}_${tool.id}`;
-        if (localStorage.getItem(key) === today) { alert("하루에 한 번만 추천할 수 있습니다."); return; }
-        const newCount = upvotes + 1;
-        setUpvotes(newCount);
-        const all = JSON.parse(localStorage.getItem("ai_library_upvotes") || "{}");
-        all[tool.id] = newCount;
-        localStorage.setItem("ai_library_upvotes", JSON.stringify(all));
-        localStorage.setItem(key, today);
+        try {
+            const res = await fetch("/api/db/upvotes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tool_id: tool.id, user_email: session.email || session.sub || "" }),
+            });
+            const data = await res.json();
+            if (data.already) { alert("하루에 한 번만 추천할 수 있습니다."); return; }
+            if (data.success) setUpvotes(data.count);
+        } catch {
+            setUpvotes(prev => prev + 1);
+        }
     };
 
-    const toggleBookmark = () => {
+    const toggleBookmark = async () => {
         if (!tool) return;
         const session = getUserSession();
         if (!session) { alert("로그인이 필요합니다."); return; }
-        const bookmarks: number[] = JSON.parse(localStorage.getItem("ai_library_bookmarks") || "[]");
-        let updated: number[];
-        if (bookmarks.includes(tool.id)) {
-            updated = bookmarks.filter(b => b !== tool.id);
-            setIsBookmarked(false);
-        } else {
-            updated = [tool.id, ...bookmarks];
-            setIsBookmarked(true);
+        try {
+            const res = await fetch("/api/db/bookmarks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tool_id: tool.id, user_email: session.email || session.sub || "" }),
+            });
+            const data = await res.json();
+            if (data.success) setIsBookmarked(data.bookmarked);
+        } catch {
+            setIsBookmarked(prev => !prev);
         }
-        localStorage.setItem("ai_library_bookmarks", JSON.stringify(updated));
     };
 
     let hostname = "";

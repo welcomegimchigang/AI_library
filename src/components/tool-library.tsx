@@ -94,8 +94,16 @@ export function ToolLibrary() {
             })
             .catch((err) => console.error("Error loading tools jsonl:", err));
 
-        const savedUpvotes = localStorage.getItem("ai_library_upvotes");
-        if (savedUpvotes) setUpvotes(JSON.parse(savedUpvotes));
+        // D1에서 추천 수 로드 (실패 시 localStorage 폴백)
+        fetch("/api/db/upvotes?all=true")
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.upvotes) setUpvotes(data.upvotes);
+            })
+            .catch(() => {
+                const saved = localStorage.getItem("ai_library_upvotes");
+                if (saved) setUpvotes(JSON.parse(saved));
+            });
 
         const isDark = localStorage.getItem("theme") === "dark" || document.documentElement.classList.contains("dark");
         setIsDarkMode(isDark);
@@ -113,22 +121,32 @@ export function ToolLibrary() {
         }
     };
 
-    const handleUpvote = (id: number) => {
+    const handleUpvote = async (id: number) => {
         const session = getUserSession();
         if (!session) {
             alert("로그인이 필요한 기능입니다. 우측 상단의 구글 로그인을 진행해주세요.");
             return;
         }
-        const today = new Date().toLocaleDateString();
-        const historyKey = `upvote_${session.sub || session.email}_${id}`;
-        if (localStorage.getItem(historyKey) === today) {
-            alert("해당 AI 툴은 하루에 한 번만 추천할 수 있습니다. 내일 다시 시도해주세요!");
-            return;
+        try {
+            const res = await fetch("/api/db/upvotes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tool_id: id, user_email: session.email || session.sub || "" }),
+            });
+            const data = await res.json();
+            if (data.already) {
+                alert("해당 AI 툴은 하루에 한 번만 추천할 수 있습니다.");
+                return;
+            }
+            if (data.success) {
+                setUpvotes(prev => ({ ...prev, [id]: data.count }));
+            }
+        } catch {
+            // D1 실패 시 localStorage 폴백
+            const newUpvotes = { ...upvotes, [id]: (upvotes[id] || 0) + 1 };
+            setUpvotes(newUpvotes);
+            localStorage.setItem("ai_library_upvotes", JSON.stringify(newUpvotes));
         }
-        const newUpvotes = { ...upvotes, [id]: (upvotes[id] || 0) + 1 };
-        setUpvotes(newUpvotes);
-        localStorage.setItem("ai_library_upvotes", JSON.stringify(newUpvotes));
-        localStorage.setItem(historyKey, today);
     };
 
     const categories = ["전체", "이미지/아트", "텍스트/문서", "개발/코드", "비디오/오디오", "기타"];
