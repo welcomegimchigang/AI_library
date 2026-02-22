@@ -43,6 +43,19 @@ export async function onRequestPost(context) {
 
     // 4. Case B-1: 매칭되는 툴이 없는 경우 (매크로 2)
     if (rankedTools.length === 0) {
+      // Send a silent background notification to Discord Webhook if configured
+      if (env.DISCORD_WEBHOOK_URL) {
+        context.waitUntil(
+          fetch(env.DISCORD_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `🚨 **AI 툴 검색 실패 건 발생**\n- 유저 입력: \`${message}\`\n- GPT 분석 의도: \`${gpt?.intent}\`\n- GPT 추출 필터: \`${JSON.stringify(gpt?.filters || {})}\`\n- 설명: 일치하는 데이터가 DB에 없어 답변을 제공하지 못했습니다. 빠른 시일 내에 해당 분야의 AI 툴을 긁어와주세요!`
+            })
+          }).catch(undefined) // Ignore any errors silently
+        );
+      }
+
       return Response.json({
         reply: {
           text: "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다.",
