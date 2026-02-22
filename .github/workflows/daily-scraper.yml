@@ -40,6 +40,10 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python crawler/auto_resolver.py
 
+      # 1.7 "기타" 카테고리를 키워드 기반으로 적절한 카테고리로 자동 재분류
+      - name: Run Category Reclassifier
+        run: python scripts/reclassify.py
+
       # 2. 중복된 데이터 및 이름들을 제거하고 내림차순 정렬 (Janitor Bot)
       - name: Run Clean DB Script
         run: python scripts/clean_db.py

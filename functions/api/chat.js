@@ -5,8 +5,30 @@
 } from "../_lib/tools.js";
 import { generateChatLayerWithGpt } from "../_lib/openai.js";
 
+const RATE_LIMIT = 30; // 시간당 최대 요청 수
+const RATE_WINDOW = 3600; // 1시간 (초)
+
 export async function onRequestPost(context) {
   const { request, env } = context;
+
+  // Rate limiting (IP 기반, KV 사용)
+  const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
+  const rateLimitKey = `rate_${clientIP}_${Math.floor(Date.now() / (RATE_WINDOW * 1000))}`;
+
+  if (env.MISSING_TOOLS_KV) {
+    try {
+      const current = parseInt(await env.MISSING_TOOLS_KV.get(rateLimitKey) || "0");
+      if (current >= RATE_LIMIT) {
+        return Response.json({
+          reply: { text: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+          state: "collecting", missing: [], quickReplies: [], filters: {}, tools: [],
+        }, { status: 429 });
+      }
+      context.waitUntil(
+        env.MISSING_TOOLS_KV.put(rateLimitKey, String(current + 1), { expirationTtl: RATE_WINDOW })
+      );
+    } catch { }
+  }
 
   try {
     const body = await request.json();
