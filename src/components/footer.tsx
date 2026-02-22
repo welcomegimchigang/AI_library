@@ -1,9 +1,10 @@
 ﻿import { Link } from "react-router-dom";
 
 const links = [
-  { label: "서비스 소개", to: "/" },
+  { label: "서비스 소개", to: "/about" },
   { label: "AI 추천 채팅", to: "/chat" },
-  { label: "문의", to: "#" },
+  { label: "개인정보처리방침", to: "/privacy" },
+  { label: "이용약관", to: "/terms" },
 ];
 
 export function Footer() {
