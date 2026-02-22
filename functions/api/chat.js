@@ -31,7 +31,6 @@ export async function onRequestPost(context) {
     }
 
     // 3. Case B: 툴 검색 요청 (search_tools)
-    // 기존 필터와 GPT가 새로 뽑아준 필터 병합
     const filters = {
       ...prevFilters,
       ...(gpt.filters || {}),
@@ -41,44 +40,48 @@ export async function onRequestPost(context) {
     const tools = await loadTools(request, env);
     const rankedTools = rankTools(tools, filters, message, 5);
 
-    // DB에 없는 툴을 KV DB에 "pending" 상태로 저장하여 auto-resolver 파이프라인에서 수집하도록 조치
-    if (env.MISSING_TOOLS_KV) {
-      const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-      context.waitUntil(
-        env.MISSING_TOOLS_KV.put(queryKey, JSON.stringify({
-          query: message,
-          intent: gpt?.intent,
-          filters: gpt?.filters || {},
-          status: "pending",
-          timestamp: Date.now()
-        })).catch(console.error)
-      );
+    // 4. Case B-1: 매칭되는 툴이 없는 경우
+    if (rankedTools.length === 0) {
+      // KV DB에 실패한 검색어 저장
+      if (env.MISSING_TOOLS_KV) {
+        const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        context.waitUntil(
+          env.MISSING_TOOLS_KV.put(queryKey, JSON.stringify({
+            query: message,
+            intent: gpt?.intent,
+            filters: gpt?.filters || {},
+            status: "pending",
+            timestamp: Date.now()
+          })).catch(console.error)
+        );
+      }
+
+      // Discord 웹훅 알림
+      if (env.DISCORD_WEBHOOK_URL) {
+        context.waitUntil(
+          fetch(env.DISCORD_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `🚨 **AI 툴 검색 실패 건 발생**\n- 유저 입력: \`${message}\`\n- GPT 분석 의도: \`${gpt?.intent}\`\n- 설명: Cloudflare KV DB에 방금 적재되었으며, 오늘 자정 파이썬 봇이 자동으로 해당 툴을 수사하여 DB에 채워 넣습니다! 🤖`
+            })
+          }).catch(undefined)
+        );
+      }
+
+      return Response.json({
+        reply: {
+          text: "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다.",
+        },
+        state: "refining",
+        missing: [],
+        quickReplies: defaultQuickReplies(filters, []),
+        filters,
+        tools: [],
+      });
     }
 
-    // Send a silent background notification to Discord Webhook if configured
-    if (env.DISCORD_WEBHOOK_URL) {
-      context.waitUntil(
-        fetch(env.DISCORD_WEBHOOK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: `🚨 **AI 툴 검색 실패 건 발생**\n- 유저 입력: \`${message}\`\n- GPT 분석 의도: \`${gpt?.intent}\`\n- 설명: Cloudflare KV DB에 방금 적재되었으며, 오늘 자정 파이썬 봇이 자동으로 해당 툴을 수사하여 DB에 채워 넣습니다! 🤖`
-          })
-        }).catch(undefined) // Ignore any errors silently
-      );
-    }
-
-    return Response.json({
-      reply: {
-        text: "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다.",
-      },
-      state: "refining",
-      missing: [],
-      quickReplies: defaultQuickReplies(filters, []),
-      filters,
-      tools: [],
-    });
-    // 5. Case B-2: 매칭되는 툴이 있는 경우 (매크로 3)
+    // 5. Case B-2: 매칭되는 툴이 있는 경우
     const toolsOut = rankedTools.map((t) => ({
       damoa_id: t.damoa_id,
       serviceName: t.serviceName,
@@ -88,7 +91,6 @@ export async function onRequestPost(context) {
       location: t.location,
       supportedPlatforms: t.supportedPlatforms,
       thumbnail: t.thumbnail,
-      // GPT가 더이상 이유(why)를 생성하지 않으므로 고정 문구 제공
       why: `${t.serviceType || "관련"} 작업에 유용한 AI 툴입니다.`,
     }));
 
