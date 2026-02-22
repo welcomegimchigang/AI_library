@@ -1,15 +1,57 @@
-﻿import { ArrowLeft, Loader2, Sparkles, User } from "lucide-react";
+﻿import { ArrowLeft, ChevronDown, Loader2, Sparkles, User, ExternalLink } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { AIToolCard } from "@/components/ai-tool-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { chatExamples } from "@/lib/mock-data";
-import type { ToolItem } from "@/lib/types";
 
 type Msg = { id: string; role: "assistant" | "user" | "system"; text: string };
 type ChatState = "collecting" | "recommended" | "refining" | "";
+
+interface ChatTool {
+  damoa_id: number;
+  serviceName: string;
+  website: string;
+  serviceType: string;
+  price_bucket: string;
+  why: string;
+  thumbnail?: string;
+}
+
+function ChatToolCard({ tool }: { tool: ChatTool }) {
+  let hostname = "";
+  try { hostname = new URL(tool.website).hostname; } catch { }
+
+  return (
+    <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="w-10 h-10 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+        {hostname ? (
+          <img
+            src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`}
+            alt={tool.serviceName}
+            className="w-7 h-7 object-contain"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; e.currentTarget.parentElement!.innerHTML = `<span class="text-sm font-bold text-slate-400">${tool.serviceName.charAt(0)}</span>`; }}
+          />
+        ) : (
+          <span className="text-sm font-bold text-slate-400">{tool.serviceName.charAt(0)}</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h4 className="font-bold text-sm text-slate-900 truncate">{tool.serviceName}</h4>
+          <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${tool.price_bucket === 'free' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+            {tool.price_bucket === 'free' ? '무료' : tool.price_bucket === 'paid' ? '유료' : '부분 무료'}
+          </span>
+        </div>
+        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{tool.why || tool.serviceType}</p>
+        <a href={tool.website} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium">
+          방문하기 <ExternalLink size={10} />
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export function ChatPage() {
   const [input, setInput] = useState("");
@@ -17,14 +59,15 @@ export function ChatPage() {
     { id: "a1", role: "assistant", text: "안녕하세요. 어떤 작업용 AI 툴을 찾고 계신가요?" },
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [recommendedTools, setRecommendedTools] = useState<ToolItem[]>([]);
+  const [recommendedTools, setRecommendedTools] = useState<ChatTool[]>([]);
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [chatState, setChatState] = useState<ChatState>("");
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [showAllTools, setShowAllTools] = useState(false);
+  const [lastQuery, setLastQuery] = useState("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom of messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -35,20 +78,19 @@ export function ChatPage() {
     const trimmed = textToSubmit.trim();
     if (!trimmed || isLoading) return;
 
-    // Add user message
     const newMessage: Msg = { id: String(Date.now()), role: "user", text: trimmed };
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
     setIsLoading(true);
+    setLastQuery(trimmed);
+    setShowAllTools(false);
 
     try {
       const history = messages.slice(-5).map(m => ({ role: m.role, text: m.text }));
 
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: trimmed,
           state: chatState,
@@ -57,34 +99,29 @@ export function ChatPage() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
 
       const data = await response.json();
 
-      // Update state from API response
       if (data.reply?.text) {
-        setMessages((prev) => [...prev, { id: String(Date.now()), role: "assistant", text: data.reply.text }]);
+        // 추천 결과가 있으면 추가 안내 메시지도 함께
+        let replyText = data.reply.text;
+        if (Array.isArray(data.tools) && data.tools.length > 0) {
+          replyText += "\n\n💡 예산이나 사용 환경(PC/모바일) 등 구체적인 조건을 알려주시면 더 정확한 추천이 가능합니다!";
+        }
+        setMessages((prev) => [...prev, { id: String(Date.now()), role: "assistant", text: replyText }]);
       }
 
       if (data.state) setChatState(data.state);
       if (data.filters) setFilters(data.filters);
-      if (Array.isArray(data.quickReplies)) setQuickReplies(data.quickReplies);
+      if (Array.isArray(data.quickReplies)) {
+        // 기본 퀵리플라이에 여건 관련 옵션 추가
+        const extraReplies = data.tools?.length > 0 ? ["무료만 보기", "모바일 위주로 보기", "비슷한 툴 더 보기"] : [];
+        setQuickReplies([...data.quickReplies, ...extraReplies].slice(0, 6));
+      }
 
-      // Map API tools to our ToolItem format
       if (Array.isArray(data.tools)) {
-        const mappedTools: ToolItem[] = data.tools.map((t: any) => ({
-          id: String(t.damoa_id),
-          name: t.serviceName || "Unknown Tool",
-          description: t.why || t.serviceType || "",
-          features: t.supportedPlatforms ? t.supportedPlatforms.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
-          price: t.price_bucket === "free" ? "Free" : t.price_bucket === "paid" ? "Paid" : "Freemium",
-          score: Math.random() * (5.0 - 4.2) + 4.2, // API currently doesn't provide a numerical score
-          image: t.thumbnail || "https://images.unsplash.com/photo-1611532736579-6b16e2b50449?q=80&w=1200&auto=format&fit=crop",
-          url: t.website || "#",
-        }));
-        setRecommendedTools(mappedTools);
+        setRecommendedTools(data.tools);
       }
     } catch (error) {
       console.error("Chat API Error:", error);
@@ -96,6 +133,8 @@ export function ChatPage() {
       setIsLoading(false);
     }
   };
+
+  const visibleTools = showAllTools ? recommendedTools : recommendedTools.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(100%_100%_at_0%_0%,#dbeafe_0%,#e9d5ff_45%,#fce7f3_80%,#f8fafc_100%)]">
@@ -130,7 +169,7 @@ export function ChatPage() {
                     <span className="text-[10px] font-bold text-slate-500">AI Assistant</span>
                   </div>
                 )}
-                <span>{m.text}</span>
+                <span className="whitespace-pre-line">{m.text}</span>
               </div>
             ))}
 
@@ -164,7 +203,7 @@ export function ChatPage() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 disabled={isLoading}
-                className="h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]/50 focus:border-transparent transition-all"
+                className="h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]/50 focus:border-transparent transition-all"
                 placeholder="예: 쇼츠 편집용 무료 AI 툴 추천해줘"
               />
               <Button
@@ -188,6 +227,7 @@ export function ChatPage() {
             {recommendedTools.length > 0 ? (
               <div className="text-xs text-slate-500 mb-4 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                 대화 조건에 맞춰 <b>{recommendedTools.length}개</b>의 툴을 찾았습니다.
+                {recommendedTools.length > 3 && !showAllTools && " 아래 버튼을 눌러 더 확인하세요."}
               </div>
             ) : (
               <div className="grid gap-2 mb-2">
@@ -195,10 +235,7 @@ export function ChatPage() {
                   <button
                     key={example}
                     className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
-                    onClick={() => {
-                      setInput(example);
-                      // focus output automatically when clicked if we wanted to
-                    }}
+                    onClick={() => setInput(example)}
                   >
                     {example}
                   </button>
@@ -206,11 +243,42 @@ export function ChatPage() {
               </div>
             )}
 
-            <div className="grid gap-3 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1 pb-4">
-              {recommendedTools.map((tool) => (
-                <AIToolCard key={tool.id} tool={tool} />
+            <div className="grid gap-3 max-h-[calc(100vh-18rem)] overflow-y-auto pr-1 pb-4">
+              {visibleTools.map((tool) => (
+                <ChatToolCard key={tool.damoa_id} tool={tool} />
               ))}
             </div>
+
+            {/* Show More Button */}
+            {recommendedTools.length > 3 && !showAllTools && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAllTools(true)}
+                className="w-full mt-3 rounded-full text-slate-600 border-slate-200 hover:bg-slate-50"
+              >
+                <ChevronDown size={16} className="mr-2" />
+                더 많은 AI 툴 보기 ({recommendedTools.length - 3}개 더)
+              </Button>
+            )}
+
+            {/* Budget/Condition Prompt */}
+            {recommendedTools.length > 0 && (
+              <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                <p className="text-xs text-slate-600 mb-2 font-medium">💬 더 정확한 추천을 원하시면:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["무료 AI만 보여줘", "PC에서 사용할 거야", "1인 창업자용으로 추천해줘"].map(q => (
+                    <button
+                      key={q}
+                      onClick={() => send(q)}
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-white border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </main>

@@ -18,12 +18,14 @@ interface Tool {
 const ITEMS_PER_PAGE = 30;
 
 const LOGO_COLORS = [
-    "bg-gradient-to-br from-blue-500 to-indigo-600",
-    "bg-gradient-to-br from-purple-500 to-pink-600",
-    "bg-gradient-to-br from-emerald-500 to-teal-600",
-    "bg-gradient-to-br from-orange-500 to-red-600",
-    "bg-gradient-to-br from-cyan-500 to-blue-600",
-    "bg-gradient-to-br from-rose-500 to-pink-600",
+    "from-blue-500 to-indigo-600",
+    "from-purple-500 to-pink-600",
+    "from-emerald-500 to-teal-600",
+    "from-orange-500 to-red-600",
+    "from-cyan-500 to-blue-600",
+    "from-rose-500 to-pink-600",
+    "from-amber-500 to-orange-600",
+    "from-violet-500 to-purple-600",
 ];
 
 function getLogoColor(name: string) {
@@ -34,26 +36,31 @@ function getLogoColor(name: string) {
 
 function LogoFallback({ name }: { name: string }) {
     return (
-        <div className={`w-full h-full flex items-center justify-center ${getLogoColor(name)} rounded-lg`}>
+        <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getLogoColor(name)} rounded-lg`}>
             <span className="text-white text-3xl font-black drop-shadow-md">{name.charAt(0).toUpperCase()}</span>
         </div>
     );
 }
 
 function ToolLogo({ url, name }: { url: string; name: string }) {
-    const [failed, setFailed] = useState(false);
+    const [level, setLevel] = useState(0); // 0=google, 1=clearbit, 2=fallback
     let hostname = "";
     try { hostname = new URL(url).hostname; } catch { }
 
-    if (failed || !hostname) return <LogoFallback name={name} />;
+    if (!hostname || level >= 2) return <LogoFallback name={name} />;
+
+    const srcs = [
+        `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`,
+        `https://logo.clearbit.com/${hostname}`,
+    ];
 
     return (
         <img
-            src={`https://logo.clearbit.com/${hostname}`}
+            src={srcs[level]}
             alt={name}
             loading="lazy"
             className="max-w-full max-h-full object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-500"
-            onError={() => setFailed(true)}
+            onError={() => setLevel(prev => prev + 1)}
         />
     );
 }
@@ -141,7 +148,6 @@ export function ToolLibrary() {
         return [...tools].sort((a, b) => (upvotes[b.id] || 0) - (upvotes[a.id] || 0)).slice(0, 5);
     }, [tools, upvotes]);
 
-    // Generate visible page numbers
     const getPageNumbers = () => {
         const pages: (number | string)[] = [];
         if (totalPages <= 7) {
@@ -156,13 +162,17 @@ export function ToolLibrary() {
         return pages;
     };
 
+    const scrollToLibrary = () => {
+        document.getElementById("library")?.scrollIntoView({ behavior: "smooth" });
+    };
+
     return (
         <div className="w-full max-w-6xl mx-auto py-12 px-4 transition-colors duration-300">
             <div className="flex justify-between items-center mb-8">
                 <h2 className="text-3xl font-bold text-slate-900 dark:text-white">AI 툴 탐색기</h2>
                 <div className="flex items-center gap-4">
                     <span className="text-sm text-slate-500 dark:text-slate-400">총 {filteredTools.length}개</span>
-                    <Button variant="outline" onClick={toggleDarkMode} className="rounded-full w-10 h-10 p-0 border-slate-200 dark:border-slate-700 dark:text-white">
+                    <Button variant="outline" onClick={toggleDarkMode} className="rounded-full w-10 h-10 p-0 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200">
                         {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
                     </Button>
                 </div>
@@ -210,7 +220,7 @@ export function ToolLibrary() {
                         placeholder="원하는 AI 툴을 검색해 보세요 (예: 미드저니, 챗봇...)"
                         value={searchQuery}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                        className="pl-10 h-12 rounded-full dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        className="pl-10 h-12 rounded-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400"
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -219,7 +229,7 @@ export function ToolLibrary() {
                             key={cat}
                             variant={activeCategory === cat ? "default" : "outline"}
                             onClick={() => setActiveCategory(cat)}
-                            className={`rounded-full ${activeCategory === cat ? 'bg-blue-600' : 'text-slate-700 dark:text-slate-300 dark:border-slate-700'}`}
+                            className={`rounded-full ${activeCategory === cat ? 'bg-blue-600 text-white' : 'text-slate-700 border-slate-300 dark:text-slate-200 dark:border-slate-600'}`}
                         >
                             {cat}
                         </Button>
@@ -246,7 +256,7 @@ export function ToolLibrary() {
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm backdrop-blur-md ${tool.isFree ? 'bg-emerald-500/90' : 'bg-rose-500/90'}`}>
                                             {tool.isFree ? '무료' : '유료'}
                                         </span>
-                                        <span className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-700 bg-white/90 shadow-sm backdrop-blur-md">
+                                        <span className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-700 bg-white/90 shadow-sm backdrop-blur-md dark:text-slate-800">
                                             {tool.category}
                                         </span>
                                     </div>
@@ -257,19 +267,19 @@ export function ToolLibrary() {
                                         {tool.description}
                                     </p>
                                     <div className="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-700">
-                                        <Button variant="ghost" size="sm" onClick={() => handleUpvote(tool.id)} className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400">
+                                        <Button variant="ghost" size="sm" onClick={() => handleUpvote(tool.id)} className="text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400">
                                             <ThumbsUp size={16} className="mr-2" />
                                             추천 {upvotes[tool.id] || 0}
                                         </Button>
                                         <Button variant="ghost" size="sm" onClick={() => {
                                             if (!getUserSession()) { alert("로그인이 필요한 기능입니다. 우측 상단에서 로그인해주세요."); return; }
                                             setSelectedTool(tool);
-                                        }} className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400">
+                                        }} className="text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400">
                                             <MessageSquare size={16} className="mr-2" />
                                             리뷰
                                         </Button>
                                         <a href={tool.url} target="_blank" rel="noreferrer">
-                                            <Button size="sm" className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600">
+                                            <Button size="sm" className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500">
                                                 방문하기
                                                 <ExternalLink size={14} className="ml-2" />
                                             </Button>
@@ -287,21 +297,21 @@ export function ToolLibrary() {
                                 variant="outline"
                                 size="sm"
                                 disabled={currentPage === 1}
-                                onClick={() => { setCurrentPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                className="rounded-full dark:border-slate-700 dark:text-slate-300"
+                                onClick={() => { setCurrentPage(p => p - 1); scrollToLibrary(); }}
+                                className="rounded-full border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-200"
                             >
                                 <ChevronLeft size={16} />
                             </Button>
                             {getPageNumbers().map((page, i) =>
                                 typeof page === "string" ? (
-                                    <span key={`dots-${i}`} className="px-2 text-slate-400">...</span>
+                                    <span key={`dots-${i}`} className="px-2 text-slate-400 dark:text-slate-500">...</span>
                                 ) : (
                                     <Button
                                         key={page}
                                         variant={currentPage === page ? "default" : "outline"}
                                         size="sm"
-                                        onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        className={`rounded-full min-w-[36px] ${currentPage === page ? 'bg-blue-600 text-white' : 'dark:border-slate-700 dark:text-slate-300'}`}
+                                        onClick={() => { setCurrentPage(page); scrollToLibrary(); }}
+                                        className={`rounded-full min-w-[36px] ${currentPage === page ? 'bg-blue-600 text-white' : 'border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-200'}`}
                                     >
                                         {page}
                                     </Button>
@@ -311,8 +321,8 @@ export function ToolLibrary() {
                                 variant="outline"
                                 size="sm"
                                 disabled={currentPage === totalPages}
-                                onClick={() => { setCurrentPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                className="rounded-full dark:border-slate-700 dark:text-slate-300"
+                                onClick={() => { setCurrentPage(p => p + 1); scrollToLibrary(); }}
+                                className="rounded-full border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-200"
                             >
                                 <ChevronRight size={16} />
                             </Button>
