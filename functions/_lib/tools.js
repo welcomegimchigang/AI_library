@@ -165,13 +165,13 @@ const STOP_WORDS = new Set(["ai", "알려줘", "알려", "찾아줘", "찾아", 
 
 function matchQ(tool, q) {
   if (!q) return true;
-  const words = text(q).split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
+  const words = text(q).split(/\s+/).filter(w => w.length > 0 && !STOP_WORDS.has(w));
   if (words.length === 0) return true;
   const hay = [tool.serviceName, tool.serviceType, ...(tool.keyFeatures_list || [])].map(text).join(" ");
 
-  return words.some(w => {
+  return words.every(w => {
     const baseW = getKoreanBase(w);
-    return hay.includes(w) || (baseW.length >= 2 && hay.includes(baseW));
+    return hay.includes(w) || (baseW.length > 0 && hay.includes(baseW));
   });
 }
 
@@ -221,7 +221,7 @@ export function parseMessageToFilters(message) {
   const queryTokens = (message || "")
     .split(/\s+/)
     .map((x) => x.trim())
-    .filter((x) => x.length >= 2)
+    .filter((x) => x.length > 0)
     .slice(0, 5);
 
   if (queryTokens.length > 0) filters.q = queryTokens.join(" ");
@@ -246,9 +246,10 @@ function matchedKeywordCount(hay, words) {
 function scoreTool(tool, filters, message) {
   const f = normalizeFilters(filters);
   const msgWords = String(message || "")
+    .toLowerCase()
     .split(/\s+/)
     .map((x) => x.trim())
-    .filter((x) => x.length >= 2)
+    .filter((x) => x.length > 0 && !STOP_WORDS.has(x))
     .slice(0, 8);
   const type = text(tool.serviceType);
   const name = text(tool.serviceName);
@@ -263,19 +264,19 @@ function scoreTool(tool, filters, message) {
   }
 
   if (f.q) {
-    const qWords = text(f.q).split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
+    const qWords = text(f.q).split(/\s+/).filter(w => w.length > 0 && !STOP_WORDS.has(w));
     for (const w of qWords) {
       const baseW = getKoreanBase(w);
-      if (baseW.length >= 2 && all.includes(baseW)) score += 5;
+      if (baseW.length > 0 && all.includes(baseW)) score += 5;
       else if (all.includes(w)) score += 3;
     }
   }
 
   for (const w of msgWords) {
     const baseW = getKoreanBase(w);
-    if (name.includes(w) || (baseW.length >= 2 && name.includes(baseW))) score += 2;
-    if (type.includes(w) || (baseW.length >= 2 && type.includes(baseW))) score += 3;
-    if (features.includes(w) || (baseW.length >= 2 && features.includes(baseW))) score += 2;
+    if (name.includes(w) || (baseW.length > 0 && name.includes(baseW))) score += 2;
+    if (type.includes(w) || (baseW.length > 0 && type.includes(baseW))) score += 3;
+    if (features.includes(w) || (baseW.length > 0 && features.includes(baseW))) score += 2;
   }
 
   if (f.use_case && all.includes(text(f.use_case))) score += 2;
@@ -305,9 +306,13 @@ export function rankTools(tools, filters = {}, message = "", limit = 8) {
     .sort((a, b) => b.score - a.score || text(b.tool.releaseDate).localeCompare(text(a.tool.releaseDate)))
     .map((x) => x.tool);
 
-  // 사용자가 찾고자 하는 구체적인 의도(q, category, use_case)가 아예 추출되지 않았다면 (예: "음악추천"을 GPT가 명사로 못 뽑은 경우)
-  // 아무 쓸모없는 랜덤 사이트(법률 등)를 던져주지 마라.
   const hasSpecificIntent = Boolean(f.q || f.category || f.use_case);
+
+  // 검색어나 카테고리가 명확한데 일치하는 도구가 단 하나도 없다면, 무관련 툴을 억지로 추천하지 말고 빈 배열 리턴
+  if (hasSpecificIntent && strict.length === 0) {
+    return [];
+  }
+
   if (!hasSpecificIntent) {
     return [];
   }
@@ -316,6 +321,7 @@ export function rankTools(tools, filters = {}, message = "", limit = 8) {
 
   const broad = tools
     .map((tool) => ({ tool, score: scoreTool(tool, f, message) }))
+    .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score || text(b.tool.releaseDate).localeCompare(text(a.tool.releaseDate)))
     .map((x) => x.tool);
 

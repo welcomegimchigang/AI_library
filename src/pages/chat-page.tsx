@@ -115,9 +115,7 @@ export function ChatPage() {
       if (data.state) setChatState(data.state);
       if (data.filters) setFilters(data.filters);
       if (Array.isArray(data.quickReplies)) {
-        // 기본 퀵리플라이에 여건 관련 옵션 추가
-        const extraReplies = data.tools?.length > 0 ? ["무료만 보기", "모바일 위주로 보기", "비슷한 툴 더 보기"] : [];
-        setQuickReplies([...data.quickReplies, ...extraReplies].slice(0, 6));
+        setQuickReplies(data.quickReplies.slice(0, 6));
       }
 
       if (Array.isArray(data.tools)) {
