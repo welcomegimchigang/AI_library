@@ -84,7 +84,7 @@ const PLATFORM_ALIASES = {
   mac: ["맥", "mac", "macos"],
 };
 
-function text(v) {
+export function text(v) {
   return String(v ?? "").toLowerCase();
 }
 
@@ -135,7 +135,7 @@ function matchCategory(tool, category) {
   return rule.keywords.some((kw) => hay.includes(text(kw))) || hay.includes(text(rule.id));
 }
 
-function matchBudget(tool, budget) {
+export function matchBudget(tool, budget) {
   if (!budget) return true;
   const b = text(budget);
   const p = text(tool.price_bucket);
@@ -144,7 +144,7 @@ function matchBudget(tool, budget) {
   return true;
 }
 
-function matchLocation(tool, location) {
+export function matchLocation(tool, location) {
   if (!location) return true;
   const l = text(location);
   const v = text(tool.location);
@@ -153,7 +153,7 @@ function matchLocation(tool, location) {
   return v.includes(l);
 }
 
-function matchPlatform(tool, platform) {
+export function matchPlatform(tool, platform) {
   if (!platform) return true;
   const p = normPlatform(platform);
   const v = text(tool.supportedPlatforms);
@@ -163,7 +163,7 @@ function matchPlatform(tool, platform) {
 
 const STOP_WORDS = new Set(["ai", "알려줘", "알려", "찾아줘", "찾아", "추천해줘", "추천", "만드는", "해주는", "관련", "어떤", "있는", "도구", "툴", "프로그램", "앱", "기능", "있어", "뭐가", "뭘까"]);
 
-function matchQ(tool, q) {
+export function matchQ(tool, q) {
   if (!q) return true;
   const words = text(q).split(/\s+/).filter(w => w.length > 0 && !STOP_WORDS.has(w));
   if (words.length === 0) return true;

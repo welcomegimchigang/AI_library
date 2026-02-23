@@ -2,6 +2,11 @@
   defaultQuickReplies,
   loadTools,
   rankTools,
+  matchBudget,
+  matchPlatform,
+  matchLocation,
+  matchQ,
+  text
 } from "../_lib/tools.js";
 import { generateChatLayerWithGpt } from "../_lib/openai.js";
 
@@ -121,6 +126,17 @@ export async function onRequestPost(context) {
       return Response.json({
         reply: { text: "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다." },
         state: "refining", missing: [], quickReplies: defaultQuickReplies(filters, []), filters, tools: [],
+        debug: {
+          vrewStrict: tools.filter(t => t.serviceName && t.serviceName.toLowerCase().includes('vrew')).map(t => ({
+            name: t.serviceName,
+            bMatch: !filters.budget ? true : matchBudget(t, filters.budget),
+            pMatch: !filters.platform ? true : matchPlatform(t, filters.platform),
+            lMatch: !filters.location ? true : matchLocation(t, filters.location),
+            qMatch: !filters.q ? true : matchQ(t, filters.q),
+            budget: text(t.price_bucket),
+            features: t.keyFeatures_list
+          }))
+        }
       });
     }
 
