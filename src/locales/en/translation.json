@@ -1,0 +1,34 @@
+{
+    "nav": {
+        "home": "Home",
+        "chat": "Chat",
+        "features": "Features",
+        "startChat": "Start Chat",
+        "profile": "My Page",
+        "logout": "Logout"
+    },
+    "home": {
+        "heroBadge": "AI Tool Library",
+        "heroTitle1": "Discover the precise AI tools",
+        "heroTitle2": "you need, instantly.",
+        "heroDesc": "A conversational curation platform that connects you with the perfect AI tools for your objectives in a single prompt.",
+        "ctaStart": "Start Now",
+        "ctaExplore": "Explore Tools"
+    },
+    "chat": {
+        "title": "How can I help you?",
+        "subtitle": "Discover the perfect AI for work, creation, or everyday tasks.",
+        "inputPlaceholder": "What kind of AI do you need? (e.g. Find me an AI app that checks English resumes)",
+        "send": "Send",
+        "searching": "Searching for recommendations..."
+    },
+    "footer": {
+        "desc": "An interactive curation service that finds the most accurate AI tool for your specific needs.",
+        "links": "Links",
+        "terms": "Terms of Service",
+        "privacy": "Privacy Policy",
+        "contact": "Contact",
+        "email": "Email Update",
+        "allRightsReserved": "© 2024 AI Tool Library. All rights reserved."
+    }
+}

@@ -1,0 +1,34 @@
+{
+    "nav": {
+        "home": "홈",
+        "chat": "채팅",
+        "features": "기능",
+        "startChat": "채팅 시작",
+        "profile": "마이페이지",
+        "logout": "로그아웃"
+    },
+    "home": {
+        "heroBadge": "AI Tool Library",
+        "heroTitle1": "필요한 AI 도구를",
+        "heroTitle2": "가장 빠르게 추천받으세요",
+        "heroDesc": "질문 한 번이면 목적에 맞는 AI 도구를 추천하고, 바로 실행까지 연결해주는 채팅형 탐색 경험입니다.",
+        "ctaStart": "지금 시작하기",
+        "ctaExplore": "도구 탐색하기"
+    },
+    "chat": {
+        "title": "무엇을 도와드릴까요?",
+        "subtitle": "업무, 창작, 일상 어떤 목적이든 딱 맞는 AI를 찾아드려요.",
+        "inputPlaceholder": "어떤 AI가 필요하신가요? (예: 취업용 영문 이력서 교정해 주는 앱 찾아줘)",
+        "send": "전송",
+        "searching": "추천 도구 찾는 중..."
+    },
+    "footer": {
+        "desc": "목적에 딱 맞는 AI 도구를 가장 빠르고 정확하게 찾아주는 대화형 큐레이션 서비스입니다.",
+        "links": "관련 링크",
+        "terms": "이용약관",
+        "privacy": "개인정보처리방침",
+        "contact": "문의사항",
+        "email": "이메일 알림",
+        "allRightsReserved": "© 2024 AI Tool Library. All rights reserved."
+    }
+}

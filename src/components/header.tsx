@@ -1,18 +1,14 @@
-﻿import { Sparkles, LogOut } from "lucide-react";
+﻿import { Sparkles, LogOut, Globe } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { getUserSession, logout } from "@/lib/auth";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
-  { label: "홈", to: "/" },
-  { label: "채팅", to: "/chat" },
-  { label: "기능", to: "/#features" },
-];
-
 export function Header() {
+  const { t, i18n } = useTranslation();
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -24,6 +20,17 @@ export function Header() {
     logout();
     setUser(null);
   };
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language.startsWith('ko') ? 'en' : 'ko';
+    i18n.changeLanguage(newLang);
+  };
+
+  const navItems = [
+    { label: t("nav.home"), to: "/" },
+    { label: t("nav.chat"), to: "/chat" },
+    { label: t("nav.features"), to: "/#features" },
+  ];
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/20 bg-white/65 backdrop-blur-xl">
@@ -50,8 +57,13 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={toggleLanguage} className="text-slate-500 hover:text-slate-900 px-2" title={i18n.language.startsWith('ko') ? "Switch to English" : "한국어로 전환"}>
+            <Globe size={16} className="mr-1" />
+            <span className="text-xs font-bold">{i18n.language.startsWith('ko') ? "EN" : "KO"}</span>
+          </Button>
+
           <Link to="/chat" className="hidden sm:block">
-            <Button size="sm">채팅 시작</Button>
+            <Button size="sm">{t("nav.startChat")}</Button>
           </Link>
 
           {/* User Auth Section */}
@@ -62,7 +74,7 @@ export function Header() {
                   <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full border border-slate-200" referrerPolicy="no-referrer" />
                   <span className="text-sm font-medium text-slate-700 hidden lg:block">{user.name}</span>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 hover:text-red-500 rounded-full h-8 w-8 p-0" title="로그아웃">
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 hover:text-red-500 rounded-full h-8 w-8 p-0" title={t("nav.logout")}>
                   <LogOut size={16} />
                 </Button>
               </div>

@@ -1,7 +1,7 @@
 ﻿import { ArrowLeft, ChevronDown, Loader2, Sparkles, User, ExternalLink } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { chatExamples } from "@/lib/mock-data";
@@ -54,9 +54,10 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
 }
 
 export function ChatPage() {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([
-    { id: "a1", role: "assistant", text: "안녕하세요. 어떤 작업용 AI 툴을 찾고 계신가요?" },
+    { id: "a1", role: "assistant", text: t("chat.subtitle") || "안녕하세요. 어떤 작업용 AI 툴을 찾고 계신가요?" },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [recommendedTools, setRecommendedTools] = useState<ChatTool[]>([]);
@@ -140,7 +141,7 @@ export function ChatPage() {
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6">
           <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
             <ArrowLeft size={16} />
-            홈으로
+            {t("nav.home") || "홈으로"}
           </Link>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/75 px-3 py-1 text-sm text-slate-700">
             <User size={14} />
@@ -174,7 +175,7 @@ export function ChatPage() {
             {isLoading && (
               <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-white text-slate-800 shadow-sm border border-slate-100 flex items-center gap-2">
                 <Loader2 size={14} className="animate-spin text-slate-400" />
-                <span className="text-slate-500">답변을 생성하고 있습니다...</span>
+                <span className="text-slate-500">{t("chat.searching") || "답변을 생성하고 있습니다..."}</span>
               </div>
             )}
           </div>
@@ -202,14 +203,14 @@ export function ChatPage() {
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 disabled={isLoading}
                 className="h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]/50 focus:border-transparent transition-all"
-                placeholder="예: 쇼츠 편집용 무료 AI 툴 추천해줘"
+                placeholder={t("chat.inputPlaceholder") || "어떤 툴을 찾으시나요?"}
               />
               <Button
                 className="h-12 px-5 min-w-[80px]"
                 onClick={() => send()}
                 disabled={isLoading || !input.trim()}
               >
-                {isLoading ? <Loader2 size={16} className="animate-spin" /> : "전송"}
+                {isLoading ? <Loader2 size={16} className="animate-spin" /> : t("chat.send") || "전송"}
               </Button>
             </div>
           </div>
