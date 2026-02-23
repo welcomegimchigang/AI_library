@@ -340,34 +340,37 @@ export function ToolLibrary() {
         </div>
       )}
 
-      {/* Search & Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-4">
-        <div className="relative flex-1">
+      {/* Search */}
+      <div className="mb-4">
+        <div className="relative">
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={20}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            size={22}
           />
           <Input
-            placeholder="원하는 AI 툴을 검색해 보세요 (예: 미드저니, 챗봇...)"
+            placeholder="원하는 AI 툴을 검색해 보세요 (예: 미드저니, 챗봇, 이미지 생성...)"
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setSearchQuery(e.target.value)
             }
-            className="pl-10 h-12 rounded-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400"
+            className="pl-12 h-14 text-base rounded-2xl bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400 shadow-sm"
           />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
-            <Button
-              key={cat}
-              variant={activeCategory === cat ? "default" : "outline"}
-              onClick={() => setActiveCategory(cat)}
-              className={`rounded-full ${activeCategory === cat ? "bg-blue-600 text-white" : "text-slate-700 border-slate-300 dark:text-slate-200 dark:border-slate-600"}`}
-            >
-              {cat}
-            </Button>
-          ))}
-        </div>
+      </div>
+
+      {/* Category Filters */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {categories.map((cat) => (
+          <Button
+            key={cat}
+            variant={activeCategory === cat ? "default" : "outline"}
+            onClick={() => setActiveCategory(cat)}
+            size="sm"
+            className={`rounded-full ${activeCategory === cat ? "bg-blue-600 text-white" : "text-slate-700 border-slate-300 dark:text-slate-200 dark:border-slate-600"}`}
+          >
+            {cat}
+          </Button>
+        ))}
       </div>
 
       {/* Top Pagination */}
