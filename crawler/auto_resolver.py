@@ -31,7 +31,7 @@ def fetch_missing_queries():
 
 def fetch_local_queries():
     """Fetch pending queries from a local JSON file if it exists."""
-    seed_file = os.path.join("data", "seed_keywords.json")
+    seed_file = os.path.join("data", "seed_mainstream.json")
     if not os.path.exists(seed_file):
         return []
     
