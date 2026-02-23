@@ -14,12 +14,12 @@ export function TermsPage() {
 
           <div className="mt-8 space-y-6 text-slate-700 leading-relaxed">
             <section>
-              <h2 className="text-xl font-bold">제1조 (목적)</h2>
-              <p>
-                본 약관은 AI Tool Library(이하 "서비스")가 제공하는 AI 도구 추천
-                및 정보 제공 서비스의 이용 조건 및 절차에 관한 사항을 규정함을
-                목적으로 합니다.
-              </p>
+              <div className="prose prose-slate max-w-none text-slate-600">
+                <p>
+                  본 약관은 foryou.ai(이하 "서비스")가 제공하는 AI 도구 추천 및 탐색 서비스의 이용 조건 및 절차에 관한 사항을 규정합니다.
+                </p>
+                <h3 className="text-lg font-bold text-slate-800 mt-6 mb-2">1. 서비스의 제공 및 변경</h3>
+              </div>
             </section>
 
             <section>

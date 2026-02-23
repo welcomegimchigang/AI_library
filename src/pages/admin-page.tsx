@@ -46,7 +46,7 @@ export function AdminPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
         <Database className="w-12 h-12 text-blue-500 mb-4" />
         <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">
-          AI Library 관리자
+          foryou.ai 관리자
         </h1>
         <form
           onSubmit={handleLogin}
@@ -144,15 +144,15 @@ export function AdminPage() {
                 ))}
                 {(!metrics?.top_intents ||
                   metrics.top_intents.length === 0) && (
-                  <tr>
-                    <td
-                      colSpan={2}
-                      className="px-6 py-8 text-center text-gray-400"
-                    >
-                      데이터가 없습니다.
-                    </td>
-                  </tr>
-                )}
+                    <tr>
+                      <td
+                        colSpan={2}
+                        className="px-6 py-8 text-center text-gray-400"
+                      >
+                        데이터가 없습니다.
+                      </td>
+                    </tr>
+                  )}
               </tbody>
             </table>
           </div>
@@ -201,10 +201,10 @@ export function AdminPage() {
             })}
             {(!metrics?.missing_queries ||
               metrics.missing_queries.length === 0) && (
-              <li className="p-8 text-center text-gray-400">
-                결핍 키워드가 없습니다. 훌륭합니다!
-              </li>
-            )}
+                <li className="p-8 text-center text-gray-400">
+                  결핍 키워드가 없습니다. 훌륭합니다!
+                </li>
+              )}
           </ul>
         </div>
       </div>

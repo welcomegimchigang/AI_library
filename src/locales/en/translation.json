@@ -8,9 +8,9 @@
     "logout": "Logout"
   },
   "home": {
-    "heroBadge": "AI Tool Library",
+    "heroBadge": "foryou.ai",
     "heroTitle1": "Discover the precise AI tools",
-    "heroTitle2": "you need, instantly.",
+    "heroTitle2": "tailored for your tasks",
     "heroDesc": "A conversational curation platform that connects you with the perfect AI tools for your objectives in a single prompt.",
     "ctaStart": "Start Now",
     "ctaExplore": "Explore Tools"
@@ -29,6 +29,6 @@
     "privacy": "Privacy Policy",
     "contact": "Contact",
     "email": "Email Update",
-    "allRightsReserved": "© 2024 AI Tool Library. All rights reserved."
+    "allRightsReserved": "© 2024 foryou.ai. All rights reserved."
   }
 }

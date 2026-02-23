@@ -11,10 +11,10 @@ export function AboutPage() {
 
           <div className="mt-8 space-y-6 text-slate-700 leading-relaxed">
             <section>
-              <h2 className="text-xl font-bold">AI Tool Library란?</h2>
-              <p>
-                AI Tool Library는 전 세계에 흩어져 있는 수백 가지의 AI 도구들을
-                한 곳에 모아, 사용자의 목적에 맞는 최적의 도구를 빠르게 찾아주는
+              <h2 className="text-xl font-bold">foryou.ai란?</h2>
+              <p className="mt-2 text-slate-700 leading-relaxed">
+                foryou.ai는 전 세계에 흩어져 있는 수백 가지의 AI 도구들을
+                사용자의 목적과 상황에 맞게 큐레이션 해주는 서비스입니다.최적의 도구를 빠르게 찾아주는
                 AI 기반 추천 플랫폼입니다.
               </p>
               <p className="mt-2">
@@ -47,16 +47,18 @@ export function AboutPage() {
 
             <section>
               <h2 className="text-xl font-bold">운영자 정보</h2>
-              <div className="mt-2 rounded-xl bg-white/80 p-4">
-                <p>
-                  <strong>서비스명:</strong> AI Tool Library
-                </p>
-                <p>
-                  <strong>운영자:</strong> AI Tool Library Team
-                </p>
-                <p>
-                  <strong>이메일:</strong> contact@ai-tool-library.com
-                </p>
+              <div className="mt-4 rounded-xl bg-slate-50 p-6 border border-slate-100">
+                <ul className="space-y-2">
+                  <li>
+                    <strong>서비스명:</strong> foryou.ai
+                  </li>
+                  <li>
+                    <strong>운영자:</strong> foryou.ai Team
+                  </li>
+                  <li>
+                    <strong>이메일:</strong> foryouai@ai-library-dhm.pages.dev
+                  </li>
+                </ul>
                 <p>
                   <strong>사이트:</strong> ai-library-dhm.pages.dev
                 </p>
@@ -65,12 +67,16 @@ export function AboutPage() {
 
             <section>
               <h2 className="text-xl font-bold">문의하기</h2>
-              <p>
+              <p className="mt-2 text-slate-700 leading-relaxed">
                 서비스 이용 중 불편한 점이나 제안 사항이 있으시면 아래 이메일로
-                연락해 주세요.
-              </p>
-              <p className="mt-1 font-semibold">
-                📧 contact@ai-tool-library.com
+                언제든지 연락해 주세요!
+                <br />
+                <a
+                  href="mailto:foryouai@ai-library-dhm.pages.dev"
+                  className="mt-2 inline-block font-medium text-blue-600 hover:underline"
+                >
+                  foryouai@ai-library-dhm.pages.dev
+                </a>
               </p>
             </section>
           </div>

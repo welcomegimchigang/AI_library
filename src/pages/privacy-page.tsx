@@ -14,11 +14,12 @@ export function PrivacyPage() {
 
           <div className="mt-8 space-y-6 text-slate-700 leading-relaxed">
             <section>
-              <h2 className="text-xl font-bold">1. 수집하는 개인정보 항목</h2>
-              <p>
-                AI Tool Library(이하 "서비스")는 서비스 이용 과정에서 다음과
-                같은 정보를 자동으로 수집할 수 있습니다.
-              </p>
+              <div className="prose prose-slate max-w-none text-slate-600">
+                <p>
+                  foryou.ai(이하 "서비스")는 서비스 이용 과정에서 다음과 같은 최소한의 개인정보를 수집합니다.
+                </p>
+                <h3 className="text-lg font-bold text-slate-800 mt-6 mb-2">1. 수집하는 개인정보 항목</h3>
+              </div>
               <ul className="ml-5 mt-2 list-disc space-y-1">
                 <li>Google 로그인 시: 이름, 이메일 주소, 프로필 사진</li>
                 <li>서비스 이용 기록: 검색 키워드, 페이지 방문 기록, 쿠키</li>
@@ -72,11 +73,9 @@ export function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold">6. 문의처</h2>
+              <h3 className="text-lg font-bold text-slate-800 mt-6 mb-2">6. 문의처</h3>
               <p>개인정보 관련 문의는 아래 이메일로 연락해 주시기 바랍니다.</p>
-              <p className="mt-1 font-semibold">
-                📧 contact@ai-tool-library.com
-              </p>
+              <p className="font-medium text-slate-800">foryouai@ai-library-dhm.pages.dev</p>
             </section>
           </div>
         </div>

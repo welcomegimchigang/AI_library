@@ -35,15 +35,12 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-white/20 bg-white/65 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6">
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-slate-900 shadow-sm"
-        >
-          <span className="rounded-xl bg-gradient-to-r from-[color:var(--primary)] to-[color:var(--accent)] p-2 text-white">
-            <Sparkles size={16} />
-          </span>
-          <span className="text-sm font-bold md:text-base">
-            AI Tool Library
+        <Link to="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
+            <Sparkles size={18} />
+          </div>
+          <span className="text-xl font-black tracking-tight text-slate-900 leading-none">
+            foryou.ai
           </span>
         </Link>
 

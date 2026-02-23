@@ -110,11 +110,11 @@ export function HomePage() {
           id="features"
           className="mx-auto w-full max-w-6xl px-4 pb-16 md:px-6"
         >
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold md:text-3xl">
-              왜 AI Tool Library인가요?
+          <div className="text-center">
+            <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+              왜 foryou.ai인가요?
             </h2>
-            <p className="mt-2 text-slate-500">
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
               다른 AI 도구 사이트와 차별화되는 핵심 기능
             </p>
           </div>

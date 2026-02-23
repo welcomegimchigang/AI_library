@@ -24,6 +24,7 @@
     "3. '무료만 보여줘', 'PC에서 사용할 거야', '모바일 위주로 보기' 같은 조건 변경/추가 요청은 이전 대화의 맥락을 이어가는 search_tools이다.",
     "4. '반도체 회로설계 AI 알려줘' 같은 희귀한 분야도 반드시 search_tools로 분류해라.",
     "5. '나 영어 공부할려고', '영상 편집이 직업이야' 같은 상황 서술도 그 목적에 맞는 AI 도구를 찾는 것이므로 search_tools이다.",
+    "6. category는 반드시 지정된 10개의 카테고리 중 가장 적합한 1가지로만 답변해야 하며, 임의의 카테고리를 지어내면 안 된다.",
     "",
     "=== 이전 대화 맥락 ===",
     history.length > 0
@@ -38,7 +39,7 @@
     required_output_shape: {
       intent: "off_topic | search_tools",
       filters: {
-        category: "string | null",
+        category: "'글쓰기/컨텐츠' | '디자인/아트' | '비디오/오디오' | '개발/프로그래밍' | '검색/데이터' | '생산성/협업도구' | '비즈니스/마케팅' | '교육/학습' | '게임' | '엔터테인먼트/기타' | null",
         budget: "free | paid | null",
         platform: "web | mobile | windows | mac | null",
         location: "국내 | 해외 | null",
