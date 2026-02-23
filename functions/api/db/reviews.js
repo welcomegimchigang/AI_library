@@ -23,16 +23,29 @@ export async function onRequest(context) {
     const url = new URL(request.url);
 
     try {
-        // GET: 특정 도구의 리뷰 목록
+        // GET: 특정 도구의 리뷰 목록 OR 특정 유저의 리뷰 목록
         if (request.method === "GET") {
             const toolId = url.searchParams.get("tool_id");
-            if (!toolId) return Response.json({ error: "tool_id required" }, { status: 400, headers: CORS_HEADERS });
+            const userEmail = url.searchParams.get("user_email");
 
-            const { results } = await env.DB.prepare(
-                "SELECT id, tool_id, user_name, user_picture, rating, content, is_anonymous, created_at FROM reviews WHERE tool_id = ? ORDER BY created_at DESC"
-            ).bind(Number(toolId)).all();
+            if (!toolId && !userEmail) {
+                return Response.json({ error: "tool_id OR user_email required" }, { status: 400, headers: CORS_HEADERS });
+            }
 
-            // 익명 리뷰는 이름/사진 마스킹
+            let results = [];
+            if (toolId) {
+                const res = await env.DB.prepare(
+                    "SELECT id, tool_id, user_name, user_picture, rating, content, is_anonymous, created_at FROM reviews WHERE tool_id = ? ORDER BY created_at DESC"
+                ).bind(Number(toolId)).all();
+                results = res.results;
+            } else if (userEmail) {
+                const res = await env.DB.prepare(
+                    "SELECT id, tool_id, user_name, user_picture, rating, content, is_anonymous, created_at FROM reviews WHERE user_email = ? ORDER BY created_at DESC"
+                ).bind(userEmail).all();
+                results = res.results;
+            }
+
+            // 익명 리뷰는 이름/사진 마스킹 (타인 조회 용도일 수 있으므로 일괄 마스킹)
             const masked = results.map(r => ({
                 ...r,
                 user_name: r.is_anonymous ? "익명" : r.user_name,

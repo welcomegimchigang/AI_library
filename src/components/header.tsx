@@ -58,9 +58,11 @@ export function Header() {
           <div className="flex items-center gap-3 sm:border-l border-slate-200 sm:pl-3">
             {user ? (
               <div className="flex items-center gap-2">
-                <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full border border-slate-200" referrerPolicy="no-referrer" />
-                <span className="text-sm font-medium text-slate-700 hidden lg:block">{user.name}</span>
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 hover:text-red-500 rounded-full h-8 w-8 p-0">
+                <Link to="/profile" className="flex items-center gap-2 hover:bg-slate-50 rounded-full pr-2 transition-colors">
+                  <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full border border-slate-200" referrerPolicy="no-referrer" />
+                  <span className="text-sm font-medium text-slate-700 hidden lg:block">{user.name}</span>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 hover:text-red-500 rounded-full h-8 w-8 p-0" title="로그아웃">
                   <LogOut size={16} />
                 </Button>
               </div>
