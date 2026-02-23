@@ -304,7 +304,14 @@ export function rankTools(tools, filters = {}, message = "", limit = 8) {
       if (hasSpecificFilter && x.score === 0) return false;
       return true;
     })
-    .sort((a, b) => b.score - a.score || text(b.tool.releaseDate).localeCompare(text(a.tool.releaseDate)))
+    .sort((a, b) => {
+      // 1순위: 관련도 점수
+      if (b.score !== a.score) return b.score - a.score;
+      // 2순위: 월간 예상 방문자 수 (트래픽순)
+      const visitsA = a.tool.monthly_visits || 0;
+      const visitsB = b.tool.monthly_visits || 0;
+      return visitsB - visitsA;
+    })
     .map((x) => x.tool);
 
   const hasSpecificIntent = Boolean(f.q || f.category || f.use_case);
@@ -323,7 +330,12 @@ export function rankTools(tools, filters = {}, message = "", limit = 8) {
   const broad = tools
     .map((tool) => ({ tool, score: scoreTool(tool, f, message) }))
     .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score || text(b.tool.releaseDate).localeCompare(text(a.tool.releaseDate)))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const visitsA = a.tool.monthly_visits || 0;
+      const visitsB = b.tool.monthly_visits || 0;
+      return visitsB - visitsA;
+    })
     .map((x) => x.tool);
 
   return broad.slice(0, max);
@@ -437,7 +449,8 @@ function normalizeTool(rawTool) {
     price_bucket: priceBucket,
     supportedPlatforms: "web", // Safe default
     thumbnail: String(rawTool.thumbnail || ""),
-    releaseDate: new Date().toISOString()
+    releaseDate: new Date().toISOString(),
+    monthly_visits: Number(rawTool.monthly_visits) || 0
   };
 }
 
