@@ -59,10 +59,18 @@ export async function onRequestPost(context) {
       ...(gpt.filters || {}),
     };
 
-    // DB 로드 및 검색
     const tools = await loadTools(request, env);
     const rankedTools = rankTools(tools, filters, message, 5);
     const matchedCount = rankedTools.length;
+
+    if (message === "debug_vrew") {
+      const dbgFilters = { category: "비디오/오디오", budget: "free", q: "영상 편집" };
+      return Response.json({
+        totalTools: tools.length,
+        vrew: tools.find(t => t.serviceName && t.serviceName.toLowerCase().includes("vrew")),
+        rankedCount: rankTools(tools, dbgFilters, "무료 영상 편집 AI 추천해줘", 5).length,
+      });
+    }
 
     // 4. [NEW] D1에 유저 검색 로그 저장 (비동기로 백그라운드 처리)
     if (env.DB) {
