@@ -99,13 +99,14 @@ function normPlatform(value = "") {
 }
 
 function normalizeFilters(filters = {}) {
+  const getVal = (v) => (v === "null" || v === null || v === undefined) ? "" : v;
   return {
-    category: filters.category || "",
-    budget: filters.budget || "",
-    location: filters.location || "",
-    platform: normPlatform(filters.platform || ""),
-    use_case: filters.use_case || "",
-    q: filters.q || "",
+    category: getVal(filters.category),
+    budget: getVal(filters.budget),
+    location: getVal(filters.location),
+    platform: normPlatform(getVal(filters.platform)),
+    use_case: getVal(filters.use_case),
+    q: getVal(filters.q),
   };
 }
 
