@@ -53,7 +53,7 @@ function ToolLogo({ url, name }: { url: string; name: string }) {
   let hostname = "";
   try {
     hostname = new URL(url).hostname;
-  } catch {}
+  } catch { }
 
   if (!hostname || level >= 2) return <LogoFallback name={name} />;
 
@@ -216,6 +216,55 @@ export function ToolLibrary() {
     document.getElementById("library")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const renderPagination = (classNamePrefix = "mt-12 mb-20") => {
+    if (filteredTools.length <= itemsPerPage) return null;
+    return (
+      <div className={`flex justify-center items-center gap-2 ${classNamePrefix}`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setCurrentPage((prev) => Math.max(1, prev - 1));
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          disabled={currentPage === 1}
+          className="rounded-full w-10 h-10 p-0"
+        >
+          <ChevronLeft size={20} />
+        </Button>
+        {getPageNumbers().map((page, i) => (
+          <Button
+            key={i}
+            variant={currentPage === page ? "default" : "ghost"}
+            size="sm"
+            onClick={() => {
+              if (typeof page === "number") {
+                setCurrentPage(page);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+            className={`rounded-full w-10 h-10 p-0 ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
+            disabled={typeof page !== "number"}
+          >
+            {page}
+          </Button>
+        ))}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          disabled={currentPage === totalPages}
+          className="rounded-full w-10 h-10 p-0"
+        >
+          <ChevronRight size={20} />
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto py-12 px-4 transition-colors duration-300">
       <div className="flex justify-between items-center mb-8">
@@ -290,7 +339,7 @@ export function ToolLibrary() {
       )}
 
       {/* Search & Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div className="relative flex-1">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -318,6 +367,9 @@ export function ToolLibrary() {
           ))}
         </div>
       </div>
+
+      {/* Top Pagination */}
+      {renderPagination("mb-8")}
 
       {/* Grid */}
       {toolsLoading ? (
@@ -418,51 +470,7 @@ export function ToolLibrary() {
       )}
 
       {/* Pagination */}
-      {filteredTools.length > itemsPerPage && (
-        <div className="flex justify-center items-center gap-2 mt-12 mb-20">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setCurrentPage((prev) => Math.max(1, prev - 1));
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            disabled={currentPage === 1}
-            className="rounded-full w-10 h-10 p-0"
-          >
-            <ChevronLeft size={20} />
-          </Button>
-          {getPageNumbers().map((page, i) => (
-            <Button
-              key={i}
-              variant={currentPage === page ? "default" : "ghost"}
-              size="sm"
-              onClick={() => {
-                if (typeof page === "number") {
-                  setCurrentPage(page);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }
-              }}
-              className={`rounded-full w-10 h-10 p-0 ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
-              disabled={typeof page !== "number"}
-            >
-              {page}
-            </Button>
-          ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setCurrentPage((prev) => Math.min(totalPages, prev + 1));
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            disabled={currentPage === totalPages}
-            className="rounded-full w-10 h-10 p-0"
-          >
-            <ChevronRight size={20} />
-          </Button>
-        </div>
-      )}
+      {renderPagination("mt-12 mb-20")}
 
       {/* Floating Compare Bar */}
       {compareIds.length > 0 && (
@@ -478,7 +486,7 @@ export function ToolLibrary() {
                   let host = "";
                   try {
                     if (t) host = new URL(t.url).hostname;
-                  } catch {}
+                  } catch { }
                   return (
                     <div
                       key={id}
@@ -551,7 +559,7 @@ export function ToolLibrary() {
                       let host = "";
                       try {
                         if (t) host = new URL(t.url).hostname;
-                      } catch {}
+                      } catch { }
                       return (
                         <th
                           key={id}
