@@ -29,9 +29,47 @@ def fetch_missing_queries():
         print(f"Error fetching from KV: {e}")
         return []
 
+def fetch_local_queries():
+    """Fetch pending queries from a local JSON file if it exists."""
+    seed_file = os.path.join("data", "seed_keywords.json")
+    if not os.path.exists(seed_file):
+        return []
+    
+    try:
+        with open(seed_file, 'r', encoding='utf-8') as f:
+            keywords = json.load(f)
+            
+        # Format them like KV items so the rest of the code works unchanged
+        results = []
+        import time
+        import random
+        import string
+        
+        for kw in keywords:
+            rand_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+            key = f"local_{int(time.time() * 1000)}_{rand_str}"
+            results.append({
+                "key": key,
+                "data": {
+                    "query": kw,
+                    "intent": "search_tools",
+                    "status": "pending",
+                    "source": "local_seed"
+                }
+            })
+        return results
+    except Exception as e:
+        print(f"Error reading local seed file: {e}")
+        return []
+
 def delete_resolved_query(key):
     """Delete a query from KV once it's resolved."""
     try:
+        if key.startswith("local_"):
+            # We don't delete from the local file automatically here during the run
+            # to keep things simple. User can delete the file later.
+            return
+            
         url = f"{KV_API_URL}?action=delete&key={key}&secret={KV_API_SECRET}"
         requests.get(url)
     except Exception as e:
@@ -214,25 +252,29 @@ def run_auto_resolver():
     print("🤖 AI Tool Auto-Resolver v2.0 Starting...")
     print("=" * 50)
     
+    # Combine KV missing items and local seed items
     missing_items = fetch_missing_queries()
+    local_items = fetch_local_queries()
     
-    if not missing_items:
-        print("No missing queries pending in KV. Nothing to do.")
+    all_items = missing_items + local_items
+    
+    if not all_items:
+        print("No missing queries pending in KV or local seed file. Nothing to do.")
         return
         
-    print(f"📋 Found {len(missing_items)} pending queries to resolve.\n")
+    print(f"📋 Found {len(all_items)} pending queries to resolve ({len(missing_items)} from KV, {len(local_items)} from local).")
     
     resolved = 0
     failed = 0
     
-    for i, item in enumerate(missing_items, 1):
+    for i, item in enumerate(all_items, 1):
         key = item["key"]
         query_data = item["data"]
         query_text = query_data.get("query")
         
         if not query_text: continue
         
-        print(f"\n--- [{i}/{len(missing_items)}] Processing: '{query_text}' ---")
+        print(f"\n--- [{i}/{len(all_items)}] Processing: '{query_text}' ---")
         
         search_results = search_web_for_tools(query_text)
         if not search_results:
@@ -254,7 +296,7 @@ def run_auto_resolver():
             failed += 1
     
     print(f"\n{'=' * 50}")
-    print(f"🏁 Auto-Resolver Complete: {resolved} resolved, {failed} failed out of {len(missing_items)} total")
+    print(f"🏁 Auto-Resolver Complete: {resolved} resolved, {failed} failed out of {len(all_items)} total")
     print(f"{'=' * 50}")
 
 if __name__ == "__main__":
