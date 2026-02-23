@@ -9,6 +9,8 @@
   { id: "교육/학습", keywords: ["학습", "교육", "공부", "튜터", "문제", "퀴즈", "learning", "education", "study"] },
   { id: "게임", keywords: ["게임", "game", "npc", "맵", "레벨"] },
   { id: "엔터테인먼트/기타", keywords: ["재미", "엔터", "취미", "기타", "entertainment", "법률"] },
+  { id: "건강/피트니스", keywords: ["건강", "운동", "피트니스", "헬스", "다이어트", "명상", "수면", "의료", "health", "fitness", "workout", "exercise", "medical", "wellness"] },
+  { id: "금융/투자", keywords: ["금융", "투자", "주식", "암호화폐", "가계부", "세금", "부동산", "finance", "invest", "stock", "crypto", "budget", "tax"] },
 ];
 
 const WORKFLOW_TEMPLATES = {

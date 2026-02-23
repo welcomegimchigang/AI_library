@@ -44,7 +44,7 @@ export function ToolDetailPage() {
         .then((d) => {
           if (d.success) setUpvotes(d.count || 0);
         })
-        .catch(() => {});
+        .catch(() => { });
 
       // D1에서 북마크 상태 로드
       const session = getUserSession();
@@ -55,7 +55,7 @@ export function ToolDetailPage() {
           .then((d) => {
             if (d.success) setIsBookmarked(d.bookmarks.includes(found.id));
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
     setLoading(false);
@@ -114,7 +114,7 @@ export function ToolDetailPage() {
   let hostname = "";
   try {
     if (tool) hostname = new URL(tool.url).hostname;
-  } catch {}
+  } catch { }
 
   if (loading) {
     return (
@@ -190,6 +190,41 @@ export function ToolDetailPage() {
             <h2 className="text-lg font-bold mb-2">소개</h2>
             <p className="text-slate-600 leading-relaxed">{tool.description}</p>
 
+            {/* Info Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+              <div className="bg-slate-50 rounded-xl p-4 text-center">
+                <p className="text-xs text-slate-400 mb-1">카테고리</p>
+                <p className="text-sm font-bold text-slate-800">{tool.category}</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-4 text-center">
+                <p className="text-xs text-slate-400 mb-1">가격</p>
+                <p className={`text-sm font-bold ${tool.isFree ? "text-emerald-600" : "text-rose-600"}`}>{tool.isFree ? "무료" : "유료"}</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-4 text-center">
+                <p className="text-xs text-slate-400 mb-1">플랫폼</p>
+                <p className="text-sm font-bold text-slate-800">웹 기반</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-4 text-center">
+                <p className="text-xs text-slate-400 mb-1">웹사이트</p>
+                <a href={tool.url} target="_blank" rel="noreferrer" className="text-sm font-bold text-blue-600 hover:underline truncate block">{hostname}</a>
+              </div>
+            </div>
+
+            {/* Feature Highlights */}
+            <div className="mt-8">
+              <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                <Star size={18} className="text-amber-500" /> 주요 특징
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {tool.description.split(/[.,!。]/).filter(s => s.trim().length > 5).slice(0, 4).map((feature, i) => (
+                  <div key={i} className="flex items-start gap-2 bg-blue-50/50 rounded-lg p-3">
+                    <span className="text-blue-500 mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-sm text-slate-700">{feature.trim()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3 mt-8">
               <a href={tool.url} target="_blank" rel="noreferrer">
@@ -239,21 +274,24 @@ export function ToolDetailPage() {
           </div>
         </div>
 
-        {/* Related Tools */}
+        {/* Related / Alternative Tools */}
         {relatedTools.length > 0 && (
           <div className="mt-10">
-            <h2 className="text-xl font-bold mb-4">비슷한 도구</h2>
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              🔄 대안 도구
+              <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{relatedTools.length}개</span>
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {relatedTools.map((rt) => {
                 let rh = "";
                 try {
                   rh = new URL(rt.url).hostname;
-                } catch {}
+                } catch { }
                 return (
                   <Link
                     key={rt.id}
                     to={`/tool/${rt.id}`}
-                    className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md transition-shadow flex items-start gap-3"
+                    className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md hover:-translate-y-0.5 transition-all flex items-start gap-3"
                   >
                     <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {rh ? (
@@ -268,13 +306,16 @@ export function ToolDetailPage() {
                         </span>
                       )}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h3 className="font-bold text-sm text-slate-900 truncate">
                         {rt.name}
                       </h3>
                       <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">
                         {rt.description}
                       </p>
+                      <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${rt.isFree ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                        {rt.isFree ? "무료" : "유료"}
+                      </span>
                     </div>
                   </Link>
                 );
