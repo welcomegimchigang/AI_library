@@ -247,7 +247,7 @@ def append_tools_to_jsonl(tools_data):
         new_lines.append(json.dumps(entry, ensure_ascii=False) + "\n")
         added += 1
         
-        if added >= 30:  # Hard limit per run to avoid rate limits
+        if added >= 80:  # 초반 부스트: 하루 최대 80개
             break
     
     if new_lines:
@@ -271,8 +271,8 @@ def run():
         remaining = FUTUREPEDIA_CATEGORIES.copy()
         print(f"🔄 Starting Round {progress['round']} - all categories reset")
     
-    # Process 3 categories per run to stay under rate limits
-    batch = remaining[:3]
+    # Process 8 categories per run (초반 부스트)
+    batch = remaining[:8]
     all_tools = []
     
     for category in batch:
@@ -280,9 +280,9 @@ def run():
         tools = scrape_futurepedia_category(category)
         
         # Get details for each tool (with delays)
-        for tool in tools[:10]:  # Limit detail fetches
+        for tool in tools[:20]:  # Limit detail fetches
             if tool["url"].startswith("https://www.futurepedia.io/tool/"):
-                time.sleep(random.uniform(1, 2))  # Be polite
+                time.sleep(random.uniform(2, 4))  # Be polite - avoid bans
                 details = get_tool_details(tool["url"])
                 if details and details.get("external_url"):
                     tool["external_url"] = details["external_url"]
@@ -292,7 +292,7 @@ def run():
             all_tools.append(tool)
         
         progress["processed"].append(category)
-        time.sleep(random.uniform(2, 4))  # Delay between categories
+        time.sleep(random.uniform(5, 8))  # Longer delay between categories to avoid ban
     
     save_progress(progress)
     
