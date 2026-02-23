@@ -225,7 +225,6 @@ export function ToolLibrary() {
           size="sm"
           onClick={() => {
             setCurrentPage((prev) => Math.max(1, prev - 1));
-            window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           disabled={currentPage === 1}
           className="rounded-full w-10 h-10 p-0"
@@ -240,7 +239,6 @@ export function ToolLibrary() {
             onClick={() => {
               if (typeof page === "number") {
                 setCurrentPage(page);
-                window.scrollTo({ top: 0, behavior: "smooth" });
               }
             }}
             className={`rounded-full w-10 h-10 p-0 ${currentPage === page ? "bg-blue-600 text-white" : ""}`}
@@ -254,7 +252,6 @@ export function ToolLibrary() {
           size="sm"
           onClick={() => {
             setCurrentPage((prev) => Math.min(totalPages, prev + 1));
-            window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           disabled={currentPage === totalPages}
           className="rounded-full w-10 h-10 p-0"
