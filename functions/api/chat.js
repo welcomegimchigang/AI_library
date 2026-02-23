@@ -122,13 +122,11 @@ export async function onRequestPost(context) {
 
     // 6. Case B-2: 매칭되는 툴이 있는 경우
     const toolsOut = rankedTools.map((t) => ({
-      damoa_id: t.damoa_id,
-      serviceName: t.serviceName,
-      website: t.website,
-      serviceType: t.serviceType,
-      price_bucket: t.price_bucket,
-      location: t.location,
-      supportedPlatforms: t.supportedPlatforms,
+      id: t.damoa_id,
+      name: t.serviceName,
+      url: t.website,
+      category: t.serviceType,
+      isFree: t.price_bucket === "free",
       thumbnail: t.thumbnail,
       why: `${t.serviceType || "관련"} 작업에 유용한 AI 툴입니다.`,
     }));

@@ -17,11 +17,11 @@ type Msg = { id: string; role: "assistant" | "user" | "system"; text: string };
 type ChatState = "collecting" | "recommended" | "refining" | "";
 
 interface ChatTool {
-  damoa_id: number;
-  serviceName: string;
-  website: string;
-  serviceType: string;
-  price_bucket: string;
+  id: number | string;
+  name: string;
+  url: string;
+  category: string;
+  isFree?: boolean;
   why: string;
   thumbnail?: string;
 }
@@ -29,8 +29,8 @@ interface ChatTool {
 function ChatToolCard({ tool }: { tool: ChatTool }) {
   let hostname = "";
   try {
-    hostname = new URL(tool.website).hostname;
-  } catch {}
+    hostname = new URL(tool.url).hostname;
+  } catch { }
 
   return (
     <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
@@ -38,39 +38,35 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
         {hostname ? (
           <img
             src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`}
-            alt={tool.serviceName}
+            alt={tool.name}
             className="w-7 h-7 object-contain"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none";
-              e.currentTarget.parentElement!.innerHTML = `<span class="text-sm font-bold text-slate-400">${tool.serviceName.charAt(0)}</span>`;
+              e.currentTarget.parentElement!.innerHTML = `<span class="text-sm font-bold text-slate-400">${tool.name.charAt(0)}</span>`;
             }}
           />
         ) : (
           <span className="text-sm font-bold text-slate-400">
-            {tool.serviceName.charAt(0)}
+            {tool.name.charAt(0)}
           </span>
         )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <h4 className="font-bold text-sm text-slate-900 truncate">
-            {tool.serviceName}
+            {tool.name}
           </h4>
           <span
-            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${tool.price_bucket === "free" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${tool.isFree ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
           >
-            {tool.price_bucket === "free"
-              ? "무료"
-              : tool.price_bucket === "paid"
-                ? "유료"
-                : "부분 무료"}
+            {tool.isFree ? "무료" : "유료/부분유료"}
           </span>
         </div>
         <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
-          {tool.why || tool.serviceType}
+          {tool.why || tool.category}
         </p>
         <a
-          href={tool.website}
+          href={tool.url}
           target="_blank"
           rel="noreferrer"
           className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
@@ -213,12 +209,11 @@ export function ChatPage() {
               <div
                 key={m.id}
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm flex flex-col gap-1
-                  ${
-                    m.role === "assistant"
-                      ? "bg-white text-slate-800 shadow-sm border border-slate-100"
-                      : m.role === "system"
-                        ? "mx-auto bg-red-50 text-red-600 border border-red-100 text-xs"
-                        : "ml-auto bg-[color:var(--primary)] text-white shadow-md"
+                  ${m.role === "assistant"
+                    ? "bg-white text-slate-800 shadow-sm border border-slate-100"
+                    : m.role === "system"
+                      ? "mx-auto bg-red-50 text-red-600 border border-red-100 text-xs"
+                      : "ml-auto bg-[color:var(--primary)] text-white shadow-md"
                   }
                 `}
               >
@@ -320,7 +315,7 @@ export function ChatPage() {
 
             <div className="grid gap-3 max-h-[calc(100vh-18rem)] overflow-y-auto pr-1 pb-4">
               {visibleTools.map((tool) => (
-                <ChatToolCard key={tool.damoa_id} tool={tool} />
+                <ChatToolCard key={tool.id} tool={tool} />
               ))}
             </div>
 
