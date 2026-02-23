@@ -68,15 +68,6 @@ export async function onRequestPost(context) {
     const rankedTools = rankTools(tools, filters, message, 5);
     const matchedCount = rankedTools.length;
 
-    if (message === "debug_vrew") {
-      const dbgFilters = { category: "비디오/오디오", budget: "free", q: "영상 편집" };
-      return Response.json({
-        totalTools: tools.length,
-        vrew: tools.find(t => t.serviceName && t.serviceName.toLowerCase().includes("vrew")),
-        rankedCount: rankTools(tools, dbgFilters, "무료 영상 편집 AI 추천해줘", 5).length,
-      });
-    }
-
     // 4. [NEW] D1에 유저 검색 로그 저장 (비동기로 백그라운드 처리)
     if (env.DB) {
       context.waitUntil(
@@ -126,17 +117,6 @@ export async function onRequestPost(context) {
       return Response.json({
         reply: { text: "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다." },
         state: "refining", missing: [], quickReplies: defaultQuickReplies(filters, []), filters, tools: [],
-        debug: {
-          vrewStrict: tools.filter(t => t.serviceName && t.serviceName.toLowerCase().includes('vrew')).map(t => ({
-            name: t.serviceName,
-            bMatch: !filters.budget ? true : matchBudget(t, filters.budget),
-            pMatch: !filters.platform ? true : matchPlatform(t, filters.platform),
-            lMatch: !filters.location ? true : matchLocation(t, filters.location),
-            qMatch: !filters.q ? true : matchQ(t, filters.q),
-            budget: text(t.price_bucket),
-            features: t.keyFeatures_list
-          }))
-        }
       });
     }
 
