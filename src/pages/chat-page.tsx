@@ -1,4 +1,11 @@
-﻿import { ArrowLeft, ChevronDown, Loader2, Sparkles, User, ExternalLink } from "lucide-react";
+﻿import {
+  ArrowLeft,
+  ChevronDown,
+  Loader2,
+  Sparkles,
+  User,
+  ExternalLink,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -21,7 +28,9 @@ interface ChatTool {
 
 function ChatToolCard({ tool }: { tool: ChatTool }) {
   let hostname = "";
-  try { hostname = new URL(tool.website).hostname; } catch { }
+  try {
+    hostname = new URL(tool.website).hostname;
+  } catch {}
 
   return (
     <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
@@ -31,21 +40,41 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
             src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`}
             alt={tool.serviceName}
             className="w-7 h-7 object-contain"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; e.currentTarget.parentElement!.innerHTML = `<span class="text-sm font-bold text-slate-400">${tool.serviceName.charAt(0)}</span>`; }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+              e.currentTarget.parentElement!.innerHTML = `<span class="text-sm font-bold text-slate-400">${tool.serviceName.charAt(0)}</span>`;
+            }}
           />
         ) : (
-          <span className="text-sm font-bold text-slate-400">{tool.serviceName.charAt(0)}</span>
+          <span className="text-sm font-bold text-slate-400">
+            {tool.serviceName.charAt(0)}
+          </span>
         )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h4 className="font-bold text-sm text-slate-900 truncate">{tool.serviceName}</h4>
-          <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${tool.price_bucket === 'free' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-            {tool.price_bucket === 'free' ? '무료' : tool.price_bucket === 'paid' ? '유료' : '부분 무료'}
+          <h4 className="font-bold text-sm text-slate-900 truncate">
+            {tool.serviceName}
+          </h4>
+          <span
+            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${tool.price_bucket === "free" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+          >
+            {tool.price_bucket === "free"
+              ? "무료"
+              : tool.price_bucket === "paid"
+                ? "유료"
+                : "부분 무료"}
           </span>
         </div>
-        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{tool.why || tool.serviceType}</p>
-        <a href={tool.website} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium">
+        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+          {tool.why || tool.serviceType}
+        </p>
+        <a
+          href={tool.website}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+        >
           방문하기 <ExternalLink size={10} />
         </a>
       </div>
@@ -57,7 +86,12 @@ export function ChatPage() {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([
-    { id: "a1", role: "assistant", text: t("chat.subtitle") || "안녕하세요. 어떤 작업용 AI 툴을 찾고 계신가요?" },
+    {
+      id: "a1",
+      role: "assistant",
+      text:
+        t("chat.subtitle") || "안녕하세요. 어떤 작업용 AI 툴을 찾고 계신가요?",
+    },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [recommendedTools, setRecommendedTools] = useState<ChatTool[]>([]);
@@ -79,7 +113,11 @@ export function ChatPage() {
     const trimmed = textToSubmit.trim();
     if (!trimmed || isLoading) return;
 
-    const newMessage: Msg = { id: String(Date.now()), role: "user", text: trimmed };
+    const newMessage: Msg = {
+      id: String(Date.now()),
+      role: "user",
+      text: trimmed,
+    };
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
     setIsLoading(true);
@@ -87,7 +125,9 @@ export function ChatPage() {
     setShowAllTools(false);
 
     try {
-      const history = messages.slice(-5).map(m => ({ role: m.role, text: m.text }));
+      const history = messages
+        .slice(-5)
+        .map((m) => ({ role: m.role, text: m.text }));
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -108,9 +148,13 @@ export function ChatPage() {
         // 추천 결과가 있으면 추가 안내 메시지도 함께
         let replyText = data.reply.text;
         if (Array.isArray(data.tools) && data.tools.length > 0) {
-          replyText += "\n\n💡 예산이나 사용 환경(PC/모바일) 등 구체적인 조건을 알려주시면 더 정확한 추천이 가능합니다!";
+          replyText +=
+            "\n\n💡 예산이나 사용 환경(PC/모바일) 등 구체적인 조건을 알려주시면 더 정확한 추천이 가능합니다!";
         }
-        setMessages((prev) => [...prev, { id: String(Date.now()), role: "assistant", text: replyText }]);
+        setMessages((prev) => [
+          ...prev,
+          { id: String(Date.now()), role: "assistant", text: replyText },
+        ]);
       }
 
       if (data.state) setChatState(data.state);
@@ -126,20 +170,29 @@ export function ChatPage() {
       console.error("Chat API Error:", error);
       setMessages((prev) => [
         ...prev,
-        { id: String(Date.now()), role: "system", text: "서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요." }
+        {
+          id: String(Date.now()),
+          role: "system",
+          text: "서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
+        },
       ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const visibleTools = showAllTools ? recommendedTools : recommendedTools.slice(0, 3);
+  const visibleTools = showAllTools
+    ? recommendedTools
+    : recommendedTools.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(100%_100%_at_0%_0%,#dbeafe_0%,#e9d5ff_45%,#fce7f3_80%,#f8fafc_100%)]">
       <header className="sticky top-0 z-30 border-b border-white/30 bg-white/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700"
+          >
             <ArrowLeft size={16} />
             {t("nav.home") || "홈으로"}
           </Link>
@@ -152,20 +205,32 @@ export function ChatPage() {
 
       <main className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-6 md:grid-cols-[1.2fr_0.8fr] md:px-6">
         <Card className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden bg-white/80">
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-5 scroll-smooth">
+          <div
+            ref={scrollRef}
+            className="flex-1 space-y-3 overflow-y-auto p-5 scroll-smooth"
+          >
             {messages.map((m) => (
               <div
                 key={m.id}
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm flex flex-col gap-1
-                  ${m.role === "assistant" ? "bg-white text-slate-800 shadow-sm border border-slate-100" :
-                    m.role === "system" ? "mx-auto bg-red-50 text-red-600 border border-red-100 text-xs" :
-                      "ml-auto bg-[color:var(--primary)] text-white shadow-md"}
+                  ${
+                    m.role === "assistant"
+                      ? "bg-white text-slate-800 shadow-sm border border-slate-100"
+                      : m.role === "system"
+                        ? "mx-auto bg-red-50 text-red-600 border border-red-100 text-xs"
+                        : "ml-auto bg-[color:var(--primary)] text-white shadow-md"
+                  }
                 `}
               >
                 {m.role === "assistant" && (
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    <Sparkles size={12} className="text-[color:var(--accent)]" />
-                    <span className="text-[10px] font-bold text-slate-500">AI Assistant</span>
+                    <Sparkles
+                      size={12}
+                      className="text-[color:var(--accent)]"
+                    />
+                    <span className="text-[10px] font-bold text-slate-500">
+                      AI Assistant
+                    </span>
                   </div>
                 )}
                 <span className="whitespace-pre-line">{m.text}</span>
@@ -175,7 +240,9 @@ export function ChatPage() {
             {isLoading && (
               <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-white text-slate-800 shadow-sm border border-slate-100 flex items-center gap-2">
                 <Loader2 size={14} className="animate-spin text-slate-400" />
-                <span className="text-slate-500">{t("chat.searching") || "답변을 생성하고 있습니다..."}</span>
+                <span className="text-slate-500">
+                  {t("chat.searching") || "답변을 생성하고 있습니다..."}
+                </span>
               </div>
             )}
           </div>
@@ -203,14 +270,20 @@ export function ChatPage() {
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 disabled={isLoading}
                 className="h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]/50 focus:border-transparent transition-all"
-                placeholder={t("chat.inputPlaceholder") || "어떤 툴을 찾으시나요?"}
+                placeholder={
+                  t("chat.inputPlaceholder") || "어떤 툴을 찾으시나요?"
+                }
               />
               <Button
                 className="h-12 px-5 min-w-[80px]"
                 onClick={() => send()}
                 disabled={isLoading || !input.trim()}
               >
-                {isLoading ? <Loader2 size={16} className="animate-spin" /> : t("chat.send") || "전송"}
+                {isLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  t("chat.send") || "전송"
+                )}
               </Button>
             </div>
           </div>
@@ -225,8 +298,11 @@ export function ChatPage() {
 
             {recommendedTools.length > 0 ? (
               <div className="text-xs text-slate-500 mb-4 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                대화 조건에 맞춰 <b>{recommendedTools.length}개</b>의 툴을 찾았습니다.
-                {recommendedTools.length > 3 && !showAllTools && " 아래 버튼을 눌러 더 확인하세요."}
+                대화 조건에 맞춰 <b>{recommendedTools.length}개</b>의 툴을
+                찾았습니다.
+                {recommendedTools.length > 3 &&
+                  !showAllTools &&
+                  " 아래 버튼을 눌러 더 확인하세요."}
               </div>
             ) : (
               <div className="grid gap-2 mb-2">
@@ -256,17 +332,23 @@ export function ChatPage() {
                 onClick={() => setShowAllTools(true)}
                 className="w-full mt-3 rounded-full text-slate-600 border-slate-200 hover:bg-slate-50"
               >
-                <ChevronDown size={16} className="mr-2" />
-                더 많은 AI 툴 보기 ({recommendedTools.length - 3}개 더)
+                <ChevronDown size={16} className="mr-2" />더 많은 AI 툴 보기 (
+                {recommendedTools.length - 3}개 더)
               </Button>
             )}
 
             {/* Budget/Condition Prompt */}
             {recommendedTools.length > 0 && (
               <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
-                <p className="text-xs text-slate-600 mb-2 font-medium">💬 더 정확한 추천을 원하시면:</p>
+                <p className="text-xs text-slate-600 mb-2 font-medium">
+                  💬 더 정확한 추천을 원하시면:
+                </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {["무료 AI만 보여줘", "PC에서 사용할 거야", "1인 창업자용으로 추천해줘"].map(q => (
+                  {[
+                    "무료 AI만 보여줘",
+                    "PC에서 사용할 거야",
+                    "1인 창업자용으로 추천해줘",
+                  ].map((q) => (
                     <button
                       key={q}
                       onClick={() => send(q)}

@@ -1,4 +1,13 @@
-﻿import { ArrowRight, Sparkles, Search, Zap, Globe, Shield, BarChart3, Bot } from "lucide-react";
+﻿import {
+  ArrowRight,
+  Sparkles,
+  Search,
+  Zap,
+  Globe,
+  Shield,
+  BarChart3,
+  Bot,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -39,7 +48,7 @@ const steps = [
   {
     num: "01",
     title: "요구사항 입력",
-    desc: "원하는 작업이나 조건을 채팅창에 자연어로 입력합니다. 예: \"영상 편집용 무료 AI 추천해줘\"",
+    desc: '원하는 작업이나 조건을 채팅창에 자연어로 입력합니다. 예: "영상 편집용 무료 AI 추천해줘"',
   },
   {
     num: "02",
@@ -80,34 +89,58 @@ export function HomePage() {
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/chat">
-                <Button size="lg" className="min-w-40 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/25">{t("home.ctaStart")}</Button>
+                <Button
+                  size="lg"
+                  className="min-w-40 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/25"
+                >
+                  {t("home.ctaStart")}
+                </Button>
               </Link>
               <a href="#library">
-                <Button size="lg" variant="secondary" className="min-w-40">{t("home.ctaExplore")}</Button>
+                <Button size="lg" variant="secondary" className="min-w-40">
+                  {t("home.ctaExplore")}
+                </Button>
               </a>
             </div>
           </div>
         </section>
 
         {/* Features */}
-        <section id="features" className="mx-auto w-full max-w-6xl px-4 pb-16 md:px-6">
+        <section
+          id="features"
+          className="mx-auto w-full max-w-6xl px-4 pb-16 md:px-6"
+        >
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold md:text-3xl">왜 AI Tool Library인가요?</h2>
-            <p className="mt-2 text-slate-500">다른 AI 도구 사이트와 차별화되는 핵심 기능</p>
+            <h2 className="text-2xl font-bold md:text-3xl">
+              왜 AI Tool Library인가요?
+            </h2>
+            <p className="mt-2 text-slate-500">
+              다른 AI 도구 사이트와 차별화되는 핵심 기능
+            </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {features.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-white/40 bg-white/75 p-6 shadow-sm backdrop-blur hover:shadow-md transition-shadow">
+              <div
+                key={item.title}
+                className="rounded-2xl border border-white/40 bg-white/75 p-6 shadow-sm backdrop-blur hover:shadow-md transition-shadow"
+              >
                 <div className="mb-3">{item.icon}</div>
-                <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
-                <p className="mt-2 text-sm text-slate-600 leading-relaxed">{item.desc}</p>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
         </section>
 
         {/* Tool Library Section */}
-        <section id="library" className="bg-slate-50 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 transition-colors duration-300">
+        <section
+          id="library"
+          className="bg-slate-50 dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 transition-colors duration-300"
+        >
           <ToolLibrary />
         </section>
 
@@ -116,14 +149,25 @@ export function HomePage() {
           <div className="rounded-3xl border border-white/40 bg-white/70 p-8 shadow-xl backdrop-blur md:p-12">
             <div className="text-center mb-10">
               <h2 className="text-2xl font-bold md:text-3xl">이용 가이드</h2>
-              <p className="mt-2 text-slate-500">3단계로 완성되는 AI 도구 탐색</p>
+              <p className="mt-2 text-slate-500">
+                3단계로 완성되는 AI 도구 탐색
+              </p>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
               {steps.map((step) => (
-                <div key={step.num} className="relative rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-                  <div className="text-4xl font-black text-blue-100 mb-3">{step.num}</div>
-                  <h3 className="text-lg font-bold text-slate-900 -mt-2">{step.title}</h3>
-                  <p className="mt-2 text-sm text-slate-600 leading-relaxed">{step.desc}</p>
+                <div
+                  key={step.num}
+                  className="relative rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow"
+                >
+                  <div className="text-4xl font-black text-blue-100 mb-3">
+                    {step.num}
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 -mt-2">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                    {step.desc}
+                  </p>
                 </div>
               ))}
             </div>
@@ -133,10 +177,16 @@ export function HomePage() {
         {/* CTA */}
         <section className="mx-auto w-full max-w-6xl px-4 pb-20 md:px-6">
           <div className="rounded-3xl bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 p-8 text-white md:p-10">
-            <h3 className="text-2xl font-bold md:text-3xl">{t("home.ctaStart")}</h3>
+            <h3 className="text-2xl font-bold md:text-3xl">
+              {t("home.ctaStart")}
+            </h3>
             <p className="mt-3 text-white/90">{t("home.heroDesc")}</p>
             <Link to="/chat" className="mt-6 inline-block">
-              <Button variant="outline" size="lg" className="border-white/50 bg-white/10 text-white hover:bg-white/20">
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-white/50 bg-white/10 text-white hover:bg-white/20"
+              >
                 {t("nav.startChat")}
                 <ArrowRight size={16} className="ml-2" />
               </Button>

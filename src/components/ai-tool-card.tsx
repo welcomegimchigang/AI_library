@@ -2,7 +2,13 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { ToolItem } from "@/lib/types";
 
 type Props = {
@@ -13,12 +19,19 @@ export function AIToolCard({ tool }: Props) {
   return (
     <Card className="overflow-hidden bg-white/85">
       <div className="aspect-[16/9] overflow-hidden bg-slate-200">
-        <img src={tool.image} alt={tool.name} className="h-full w-full object-cover" loading="lazy" />
+        <img
+          src={tool.image}
+          alt={tool.name}
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
       </div>
       <CardHeader className="space-y-2">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-base md:text-lg">{tool.name}</CardTitle>
-          <Badge className="border-transparent bg-slate-900 text-white">{tool.price}</Badge>
+          <Badge className="border-transparent bg-slate-900 text-white">
+            {tool.price}
+          </Badge>
         </div>
         <CardDescription>{tool.description}</CardDescription>
       </CardHeader>

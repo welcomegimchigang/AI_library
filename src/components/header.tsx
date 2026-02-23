@@ -22,7 +22,7 @@ export function Header() {
   };
 
   const toggleLanguage = () => {
-    const newLang = i18n.language.startsWith('ko') ? 'en' : 'ko';
+    const newLang = i18n.language.startsWith("ko") ? "en" : "ko";
     i18n.changeLanguage(newLang);
   };
 
@@ -35,11 +35,16 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-white/20 bg-white/65 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6">
-        <Link to="/" className="flex items-center gap-2 text-slate-900 shadow-sm">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-slate-900 shadow-sm"
+        >
           <span className="rounded-xl bg-gradient-to-r from-[color:var(--primary)] to-[color:var(--accent)] p-2 text-white">
             <Sparkles size={16} />
           </span>
-          <span className="text-sm font-bold md:text-base">AI Tool Library</span>
+          <span className="text-sm font-bold md:text-base">
+            AI Tool Library
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-5 md:flex">
@@ -57,9 +62,21 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={toggleLanguage} className="text-slate-500 hover:text-slate-900 px-2" title={i18n.language.startsWith('ko') ? "Switch to English" : "한국어로 전환"}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleLanguage}
+            className="text-slate-500 hover:text-slate-900 px-2"
+            title={
+              i18n.language.startsWith("ko")
+                ? "Switch to English"
+                : "한국어로 전환"
+            }
+          >
             <Globe size={16} className="mr-1" />
-            <span className="text-xs font-bold">{i18n.language.startsWith('ko') ? "EN" : "KO"}</span>
+            <span className="text-xs font-bold">
+              {i18n.language.startsWith("ko") ? "EN" : "KO"}
+            </span>
           </Button>
 
           <Link to="/chat" className="hidden sm:block">
@@ -70,11 +87,27 @@ export function Header() {
           <div className="flex items-center gap-3 sm:border-l border-slate-200 sm:pl-3">
             {user ? (
               <div className="flex items-center gap-2">
-                <Link to="/profile" className="flex items-center gap-2 hover:bg-slate-50 rounded-full pr-2 transition-colors">
-                  <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full border border-slate-200" referrerPolicy="no-referrer" />
-                  <span className="text-sm font-medium text-slate-700 hidden lg:block">{user.name}</span>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2 hover:bg-slate-50 rounded-full pr-2 transition-colors"
+                >
+                  <img
+                    src={user.picture}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full border border-slate-200"
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="text-sm font-medium text-slate-700 hidden lg:block">
+                    {user.name}
+                  </span>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 hover:text-red-500 rounded-full h-8 w-8 p-0" title={t("nav.logout")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-slate-500 hover:text-red-500 rounded-full h-8 w-8 p-0"
+                  title={t("nav.logout")}
+                >
                   <LogOut size={16} />
                 </Button>
               </div>

@@ -8,7 +8,8 @@ export const sampleTools: ToolItem[] = [
     features: ["자동 컷편집", "자막", "템플릿"],
     price: "Freemium",
     score: 4.8,
-    image: "https://images.unsplash.com/photo-1611532736579-6b16e2b50449?q=80&w=1200&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1611532736579-6b16e2b50449?q=80&w=1200&auto=format&fit=crop",
     url: "#",
   },
   {
@@ -18,7 +19,8 @@ export const sampleTools: ToolItem[] = [
     features: ["썸네일", "브랜드 키트", "이미지 생성"],
     price: "Paid",
     score: 4.6,
-    image: "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=1200&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=1200&auto=format&fit=crop",
     url: "#",
   },
   {
@@ -28,7 +30,8 @@ export const sampleTools: ToolItem[] = [
     features: ["코드 리뷰", "테스트", "문서화"],
     price: "Free",
     score: 4.7,
-    image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1200&auto=format&fit=crop",
+    image:
+      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1200&auto=format&fit=crop",
     url: "#",
   },
 ];
