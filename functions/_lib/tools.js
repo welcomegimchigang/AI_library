@@ -169,7 +169,7 @@ function matchQ(tool, q) {
   if (words.length === 0) return true;
   const hay = [tool.serviceName, tool.serviceType, ...(tool.keyFeatures_list || [])].map(text).join(" ");
 
-  return words.every(w => {
+  return words.some(w => {
     const baseW = getKoreanBase(w);
     return hay.includes(w) || (baseW.length > 0 && hay.includes(baseW));
   });
