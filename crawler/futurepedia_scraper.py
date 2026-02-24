@@ -1,44 +1,60 @@
 """
-Futurepedia Scraper - Extracts AI tools from Futurepedia.com
-Runs daily via GitHub Actions. Fetches category pages, parses tool listings,
-translates to Korean, and appends to tools.jsonl.
+Futurepedia Bulk Scraper v2 - Sitemap-based approach.
+Fetches ALL tool URLs from Futurepedia's sitemap, then scrapes
+each tool page's <meta> tags for name, description, and external URL.
+Designed to run daily in GitHub Actions and bulk-add tools.
 """
 import os
 import json
 import random
 import time
+import re
 import requests
 from deep_translator import GoogleTranslator
 
-# Futurepedia has a public JSON-like API behind their category pages
-# We use their sitemap/category structure to discover tools
-FUTUREPEDIA_CATEGORIES = [
-    "copywriting", "image-generator", "marketing", "video-editing",
-    "productivity", "code-assistant", "chatbot", "design",
-    "music", "education", "social-media", "seo", "writing",
-    "transcription", "email", "presentation", "research",
-    "finance", "healthcare", "gaming", "legal", "real-estate",
-    "fitness", "travel", "cooking", "fashion", "psychology",
-    "startup-tools", "developer-tools", "data-analysis",
-    "3d-modeling", "text-to-speech", "voice-cloning",
-    "resume-builder", "translation", "spreadsheet",
-    "customer-support", "sales", "human-resources",
-    "e-commerce", "automation", "personal-assistant"
-]
-
 TOOLS_JSONL = os.path.join("public", "data", "tools.jsonl")
+PROGRESS_FILE = os.path.join("data", "futurepedia_progress.json")
+SITEMAP_URL = "https://www.futurepedia.io/sitemap.xml"
+MAX_NEW_PER_RUN = 100  # 하루 최대 100개 추가
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-# Track processed file to avoid re-scraping same categories
-PROGRESS_FILE = os.path.join("data", "futurepedia_progress.json")
+CATEGORY_MAP = {
+    "image": "이미지/아트", "art": "이미지/아트", "design": "이미지/아트",
+    "3d": "이미지/아트", "portrait": "이미지/아트", "cartoon": "이미지/아트",
+    "photo": "이미지/아트", "avatar": "이미지/아트", "logo": "이미지/아트",
+    "writing": "텍스트/문서", "text": "텍스트/문서", "copy": "텍스트/문서",
+    "paraphras": "텍스트/문서", "grammar": "텍스트/문서", "email": "텍스트/문서",
+    "summar": "텍스트/문서", "story": "텍스트/문서", "blog": "텍스트/문서",
+    "code": "개발/코드", "developer": "개발/코드", "programming": "개발/코드",
+    "sql": "개발/코드", "api": "개발/코드",
+    "video": "비디오/오디오", "audio": "비디오/오디오", "music": "비디오/오디오",
+    "voice": "비디오/오디오", "speech": "비디오/오디오", "podcast": "비디오/오디오",
+    "transcri": "비디오/오디오",
+    "marketing": "비즈니스/마케팅", "seo": "비즈니스/마케팅", "social": "비즈니스/마케팅",
+    "sales": "비즈니스/마케팅", "e-commerce": "비즈니스/마케팅", "ad": "비즈니스/마케팅",
+    "education": "교육/학습", "student": "교육/학습", "learn": "교육/학습",
+    "tutor": "교육/학습", "research": "교육/학습", "quiz": "교육/학습",
+    "productiv": "생산성/협업", "project": "생산성/협업", "workflow": "생산성/협업",
+    "automat": "생산성/협업", "schedule": "생산성/협업", "meeting": "생산성/협업",
+    "presentation": "생산성/협업", "spreadsheet": "생산성/협업",
+    "finance": "금융/투자", "invest": "금융/투자", "crypto": "금융/투자",
+    "trading": "금융/투자", "accounting": "금융/투자",
+    "health": "건강/피트니스", "fitness": "건강/피트니스", "medical": "건강/피트니스",
+    "wellness": "건강/피트니스", "mental": "건강/피트니스",
+    "chatbot": "텍스트/문서", "assistant": "생산성/협업",
+    "customer": "비즈니스/마케팅", "hr": "비즈니스/마케팅", "recruit": "비즈니스/마케팅",
+}
 
-def load_existing_urls():
-    """Load existing tool URLs to avoid duplicates."""
+
+def load_existing():
+    """Load existing tool URLs and names."""
     urls = set()
+    names = set()
     if os.path.exists(TOOLS_JSONL):
         with open(TOOLS_JSONL, 'r', encoding='utf-8') as f:
             for line in f:
@@ -47,263 +63,228 @@ def load_existing_urls():
                 try:
                     obj = json.loads(line)
                     if "url" in obj:
-                        # Normalize URL for comparison
-                        url = obj["url"].rstrip("/").lower().replace("www.", "")
-                        urls.add(url)
+                        urls.add(obj["url"].rstrip("/").lower().replace("www.", "").replace("https://", "").replace("http://", ""))
+                    if "name" in obj:
+                        names.add(obj["name"].lower().strip())
                 except:
                     pass
-    return urls
+    return urls, names
+
+
+def get_tool_urls_from_sitemap():
+    """Fetch all /tool/ URLs from the sitemap."""
+    print("📥 Fetching Futurepedia sitemap...")
+    try:
+        resp = requests.get(SITEMAP_URL, headers=HEADERS, timeout=20)
+        resp.raise_for_status()
+        
+        # Extract all /tool/ URLs
+        tool_urls = re.findall(r'<loc>(https://www\.futurepedia\.io/tool/[^<]+)</loc>', resp.text)
+        print(f"   Found {len(tool_urls)} tool URLs in sitemap")
+        return tool_urls
+    except Exception as e:
+        print(f"   Error fetching sitemap: {e}")
+        return []
+
 
 def load_progress():
-    """Load which categories have been processed."""
     if os.path.exists(PROGRESS_FILE):
         with open(PROGRESS_FILE, 'r') as f:
             return json.load(f)
-    return {"processed": [], "round": 1}
+    return {"processed": [], "round": 1, "sitemap_done": []}
+
 
 def save_progress(progress):
     os.makedirs(os.path.dirname(PROGRESS_FILE), exist_ok=True)
     with open(PROGRESS_FILE, 'w') as f:
         json.dump(progress, f, indent=2)
 
-def translate_to_korean(text):
-    if not text or len(text.strip()) == 0:
-        return "설명 없음"
+
+def guess_category(slug, description=""):
+    """Guess our category from the tool slug and description."""
+    text = (slug + " " + description).lower()
+    for keyword, cat in CATEGORY_MAP.items():
+        if keyword in text:
+            return cat
+    return "기타"
+
+
+def translate_safe(text):
+    if not text or len(text.strip()) < 3:
+        return "AI 도구"
     try:
-        translator = GoogleTranslator(source='en', target='ko')
-        return translator.translate(text[:500])
+        return GoogleTranslator(source='en', target='ko').translate(text[:500])
     except:
         return text
 
-def scrape_futurepedia_category(category):
-    """Scrape tools from a Futurepedia category page."""
-    tools = []
-    
-    # Try the HTML page and parse tool cards
-    url = f"https://www.futurepedia.io/ai-tools/{category}"
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=15)
-        if resp.status_code != 200:
-            print(f"  [Skip] {category}: HTTP {resp.status_code}")
-            return []
-        
-        html = resp.text
-        
-        # Extract tool data from the page using simple string parsing
-        # Futurepedia renders tool cards with structured data
-        # Look for JSON-LD or structured patterns
-        import re
-        
-        # Method 1: Find tool links and names from the HTML
-        # Pattern: tool cards with href="/tool/toolname"
-        tool_pattern = r'href="/tool/([^"]+)"[^>]*>.*?'
-        
-        # Method 2: Look for tool card structures
-        # Each tool typically has: name, description, url, pricing
-        card_blocks = re.findall(r'<a[^>]*href="/tool/([^"]+)"[^>]*>(.*?)</a>', html, re.DOTALL)
-        
-        if not card_blocks:
-            # Try alternative pattern - look for tool names in headings
-            name_matches = re.findall(r'<h[23][^>]*>(.*?)</h[23]>', html)
-            link_matches = re.findall(r'href="(https?://[^"]+)"[^>]*rel="nofollow"', html)
-            desc_matches = re.findall(r'<p[^>]*class="[^"]*text-gray[^"]*"[^>]*>(.*?)</p>', html, re.DOTALL)
-            
-            for i in range(min(len(name_matches), len(link_matches))):
-                name = re.sub(r'<[^>]+>', '', name_matches[i]).strip()
-                if not name or len(name) < 2:
-                    continue
-                tools.append({
-                    "name": name,
-                    "url": link_matches[i] if i < len(link_matches) else "",
-                    "description": re.sub(r'<[^>]+>', '', desc_matches[i]).strip() if i < len(desc_matches) else "",
-                    "category_hint": category,
-                })
-        else:
-            for slug, content in card_blocks[:20]:  # Limit per category
-                name = re.sub(r'<[^>]+>', '', content).strip()
-                if not name or len(name) < 2:
-                    continue
-                
-                # Try to get the tool's external URL from the detail page
-                tools.append({
-                    "name": name,
-                    "url": f"https://www.futurepedia.io/tool/{slug}",
-                    "description": "",
-                    "category_hint": category,
-                })
-        
-        print(f"  [OK] {category}: Found {len(tools)} tools")
-        
-    except Exception as e:
-        print(f"  [Error] {category}: {e}")
-    
-    return tools
 
-def get_tool_details(tool_slug_url):
-    """Get detailed info from a Futurepedia tool page."""
+def scrape_tool_page(url):
+    """Scrape a single Futurepedia tool page for metadata."""
     try:
-        resp = requests.get(tool_slug_url, headers=HEADERS, timeout=10)
+        resp = requests.get(url, headers=HEADERS, timeout=12)
         if resp.status_code != 200:
             return None
         
-        import re
         html = resp.text
         
-        # Extract the external URL
-        ext_url_match = re.search(r'href="(https?://(?!www\.futurepedia)[^"]+)"[^>]*(?:rel="nofollow"|target="_blank")', html)
-        ext_url = ext_url_match.group(1) if ext_url_match else None
+        # Extract tool name from <title>
+        title_match = re.search(r'<title>([^<|]+)', html)
+        name = title_match.group(1).strip() if title_match else None
+        # Clean common suffixes
+        if name:
+            name = re.sub(r'\s*[-|–]\s*(Futurepedia|AI Tool).*$', '', name).strip()
         
-        # Extract description
-        desc_match = re.search(r'<meta\s+name="description"\s+content="([^"]*)"', html)
-        description = desc_match.group(1) if desc_match else ""
+        # Extract description from meta
+        desc_match = re.search(r'<meta\s+(?:name|property)="(?:description|og:description)"\s+content="([^"]*)"', html)
+        description = desc_match.group(1).strip() if desc_match else ""
         
-        # Extract pricing info
-        is_free = bool(re.search(r'(?:free|freemium)', html, re.IGNORECASE))
+        # Extract external website URL (the actual tool's website)
+        # Futurepedia links to external sites with rel="nofollow noopener"
+        ext_matches = re.findall(
+            r'href="(https?://(?!(?:www\.)?futurepedia\.io|(?:www\.)?twitter\.com|(?:www\.)?facebook\.com|(?:www\.)?linkedin\.com|(?:www\.)?youtube\.com|(?:www\.)?instagram\.com|(?:www\.)?tiktok\.com|(?:www\.)?discord\.)[^"]+)"[^>]*(?:rel="[^"]*nofollow|target="_blank")',
+            html
+        )
+        external_url = ext_matches[0] if ext_matches else None
+        
+        # Check if free
+        is_free = bool(re.search(r'(?:Free|Freemium|free plan|free tier)', html, re.IGNORECASE))
+        
+        # Extract og:image for thumbnail
+        og_img_match = re.search(r'<meta\s+property="og:image"\s+content="([^"]*)"', html)
+        og_image = og_img_match.group(1) if og_img_match else ""
+        
+        if not name or len(name) < 2:
+            return None
         
         return {
-            "external_url": ext_url,
+            "name": name,
             "description": description,
+            "external_url": external_url,
             "is_free": is_free,
+            "og_image": og_image,
         }
-    except:
+    except Exception as e:
         return None
 
-def map_category(hint):
-    """Map Futurepedia category slug to our Korean categories."""
-    mapping = {
-        "copywriting": "텍스트/문서", "writing": "텍스트/문서", "email": "텍스트/문서",
-        "image-generator": "이미지/아트", "design": "이미지/아트", "3d-modeling": "이미지/아트",
-        "video-editing": "비디오/오디오", "music": "비디오/오디오", "transcription": "비디오/오디오",
-        "text-to-speech": "비디오/오디오", "voice-cloning": "비디오/오디오",
-        "code-assistant": "개발/코드", "developer-tools": "개발/코드",
-        "marketing": "비즈니스/마케팅", "social-media": "비즈니스/마케팅", "seo": "비즈니스/마케팅",
-        "sales": "비즈니스/마케팅", "e-commerce": "비즈니스/마케팅",
-        "education": "교육/학습", "research": "교육/학습", "translation": "교육/학습",
-        "productivity": "생산성/협업", "automation": "생산성/협업", "spreadsheet": "생산성/협업",
-        "presentation": "생산성/협업", "personal-assistant": "생산성/협업",
-        "finance": "금융/투자",
-        "healthcare": "건강/피트니스", "fitness": "건강/피트니스",
-        "chatbot": "텍스트/문서", "customer-support": "기타",
-        "legal": "기타", "real-estate": "기타", "travel": "기타", "cooking": "기타",
-        "fashion": "기타", "psychology": "기타", "resume-builder": "기타",
-        "gaming": "기타", "startup-tools": "기타", "human-resources": "기타",
-        "data-analysis": "개발/코드",
-    }
-    return mapping.get(hint, "기타")
 
-def append_tools_to_jsonl(tools_data):
-    """Append new tools to tools.jsonl with Korean translations."""
-    existing_urls = load_existing_urls()
+def run():
+    print("🚀 Futurepedia Bulk Scraper v2 (Sitemap-based)")
+    print("=" * 60)
+    
+    # 1. Get all tool URLs from sitemap
+    all_tool_urls = get_tool_urls_from_sitemap()
+    if not all_tool_urls:
+        print("❌ Could not fetch sitemap. Exiting.")
+        return
+    
+    # 2. Load progress — skip already-processed URLs
+    progress = load_progress()
+    done_set = set(progress.get("sitemap_done", []))
+    remaining = [u for u in all_tool_urls if u not in done_set]
+    random.shuffle(remaining)  # Randomize to spread load
+    
+    print(f"📊 Total: {len(all_tool_urls)} | Done: {len(done_set)} | Remaining: {len(remaining)}")
+    
+    if not remaining:
+        print("🎉 All tools from sitemap have been processed!")
+        progress["sitemap_done"] = []  # Reset for next round
+        save_progress(progress)
+        return
+    
+    # 3. Load existing DB for dedup
+    existing_urls, existing_names = load_existing()
+    
+    # 4. Scrape each tool page
     added = 0
+    new_entries = []
     
-    with open(TOOLS_JSONL, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    
-    # Find max ID
+    # Get max ID
     max_id = 0
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            obj = json.loads(line)
-            max_id = max(max_id, obj.get("id", 0))
-        except:
-            pass
+    with open(TOOLS_JSONL, 'r', encoding='utf-8') as f:
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                max_id = max(max_id, json.loads(line).get("id", 0))
+            except:
+                pass
     
-    new_lines = []
-    for tool in tools_data:
-        url = tool.get("external_url") or tool.get("url", "")
-        if not url:
+    batch = remaining[:MAX_NEW_PER_RUN * 2]  # Fetch more than needed (some will be dupes)
+    
+    for i, fp_url in enumerate(batch):
+        if added >= MAX_NEW_PER_RUN:
+            break
+        
+        slug = fp_url.split("/tool/")[-1]
+        print(f"  [{i+1}/{len(batch)}] {slug}...", end=" ")
+        
+        data = scrape_tool_page(fp_url)
+        done_set.add(fp_url)
+        
+        if not data:
+            print("⏭️ skip (no data)")
             continue
         
-        normalized = url.rstrip("/").lower().replace("www.", "")
-        if normalized in existing_urls:
+        ext_url = data.get("external_url", "")
+        if not ext_url:
+            print("⏭️ skip (no external URL)")
             continue
-        if "futurepedia.io" in normalized:
-            continue  # Skip internal Futurepedia URLs
         
-        existing_urls.add(normalized)
-        max_id += 1
+        # Dedup check
+        norm_url = ext_url.rstrip("/").lower().replace("www.", "").replace("https://", "").replace("http://", "")
+        norm_name = data["name"].lower().strip()
         
-        desc_en = tool.get("description", "")
-        desc_ko = translate_to_korean(desc_en) if desc_en else "설명 없음"
+        if norm_url in existing_urls or norm_name in existing_names:
+            print("⏭️ skip (duplicate)")
+            continue
         
+        existing_urls.add(norm_url)
+        existing_names.add(norm_name)
+        
+        # Translate description
+        desc_ko = translate_safe(data["description"])
+        
+        # Get hostname for thumbnail
         hostname = ""
         try:
-            hostname = url.replace("https://", "").replace("http://", "").replace("www.", "").split("/")[0]
+            hostname = ext_url.replace("https://", "").replace("http://", "").replace("www.", "").split("/")[0]
         except:
             pass
         
+        max_id += 1
         entry = {
             "id": max_id,
-            "name": tool["name"],
+            "name": data["name"],
             "description": desc_ko,
-            "category": map_category(tool.get("category_hint", "")),
-            "url": url,
-            "isFree": tool.get("is_free", False),
+            "category": guess_category(slug, data["description"]),
+            "url": ext_url,
+            "isFree": data["is_free"],
             "thumbnail": f"https://logo.clearbit.com/{hostname}" if hostname else "",
         }
         
-        new_lines.append(json.dumps(entry, ensure_ascii=False) + "\n")
+        new_entries.append(json.dumps(entry, ensure_ascii=False) + "\n")
         added += 1
+        print(f"✅ {data['name']}")
         
-        if added >= 80:  # 초반 부스트: 하루 최대 80개
-            break
+        # Polite delay
+        time.sleep(random.uniform(1.5, 3))
     
-    if new_lines:
-        # Prepend new tools to the file
-        with open(TOOLS_JSONL, 'w', encoding='utf-8') as f:
-            f.writelines(new_lines + lines)
-    
-    return added
-
-def run():
-    print("🔍 Futurepedia Scraper Starting...")
-    print("=" * 50)
-    
-    progress = load_progress()
-    remaining = [c for c in FUTUREPEDIA_CATEGORIES if c not in progress["processed"]]
-    
-    if not remaining:
-        # All categories done, start a new round
-        progress["processed"] = []
-        progress["round"] += 1
-        remaining = FUTUREPEDIA_CATEGORIES.copy()
-        print(f"🔄 Starting Round {progress['round']} - all categories reset")
-    
-    # Process 8 categories per run (초반 부스트)
-    batch = remaining[:8]
-    all_tools = []
-    
-    for category in batch:
-        print(f"\n📂 Scraping category: {category}")
-        tools = scrape_futurepedia_category(category)
-        
-        # Get details for each tool (with delays)
-        for tool in tools[:20]:  # Limit detail fetches
-            if tool["url"].startswith("https://www.futurepedia.io/tool/"):
-                time.sleep(random.uniform(2, 4))  # Be polite - avoid bans
-                details = get_tool_details(tool["url"])
-                if details and details.get("external_url"):
-                    tool["external_url"] = details["external_url"]
-                    tool["description"] = details.get("description", tool.get("description", ""))
-                    tool["is_free"] = details.get("is_free", False)
-            
-            all_tools.append(tool)
-        
-        progress["processed"].append(category)
-        time.sleep(random.uniform(5, 8))  # Longer delay between categories to avoid ban
-    
+    # 5. Save progress
+    progress["sitemap_done"] = list(done_set)
     save_progress(progress)
     
-    if all_tools:
-        added = append_tools_to_jsonl(all_tools)
-        print(f"\n✅ Added {added} new tools from Futurepedia")
-    else:
-        print("\n⚠️ No new tools found this run")
+    # 6. Prepend new entries to JSONL
+    if new_entries:
+        with open(TOOLS_JSONL, 'r', encoding='utf-8') as f:
+            existing_lines = f.readlines()
+        with open(TOOLS_JSONL, 'w', encoding='utf-8') as f:
+            f.writelines(new_entries + existing_lines)
     
-    print(f"📊 Progress: {len(progress['processed'])}/{len(FUTUREPEDIA_CATEGORIES)} categories (Round {progress['round']})")
-    print("=" * 50)
+    print(f"\n{'='*60}")
+    print(f"✅ Added {added} new tools from Futurepedia")
+    print(f"📊 Progress: {len(done_set)}/{len(all_tool_urls)} tool pages processed")
+    print(f"{'='*60}")
+
 
 if __name__ == "__main__":
     run()
