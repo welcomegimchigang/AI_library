@@ -30,37 +30,41 @@ def fetch_missing_queries():
         return []
 
 def fetch_local_queries():
-    """Fetch pending queries from a local JSON file if it exists."""
-    seed_file = os.path.join("data", "seed_mainstream.json")
-    if not os.path.exists(seed_file):
-        return []
+    """Fetch pending queries from local JSON seed files."""
+    # Try bulk file first, then mainstream
+    for seed_name in ["seed_bulk.json", "seed_mainstream.json", "seed_keywords.json"]:
+        seed_file = os.path.join("data", seed_name)
+        if not os.path.exists(seed_file):
+            continue
     
-    try:
-        with open(seed_file, 'r', encoding='utf-8') as f:
-            keywords = json.load(f)
+        try:
+            with open(seed_file, 'r', encoding='utf-8') as f:
+                keywords = json.load(f)
+                
+            # Format them like KV items so the rest of the code works unchanged
+            results = []
+            import time
+            import random
+            import string
             
-        # Format them like KV items so the rest of the code works unchanged
-        results = []
-        import time
-        import random
-        import string
-        
-        for kw in keywords:
-            rand_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-            key = f"local_{int(time.time() * 1000)}_{rand_str}"
-            results.append({
-                "key": key,
-                "data": {
-                    "query": kw,
-                    "intent": "search_tools",
-                    "status": "pending",
-                    "source": "local_seed"
-                }
-            })
-        return results
-    except Exception as e:
-        print(f"Error reading local seed file: {e}")
-        return []
+            for kw in keywords:
+                rand_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+                key = f"local_{int(time.time() * 1000)}_{rand_str}"
+                results.append({
+                    "key": key,
+                    "data": {
+                        "query": kw,
+                        "intent": "search_tools",
+                        "status": "pending",
+                        "source": "local_seed"
+                    }
+                })
+            print(f"[Seed] Loaded {len(results)} queries from {seed_name}")
+            return results
+        except Exception as e:
+            print(f"Error reading {seed_name}: {e}")
+            continue
+    return []
 
 def delete_resolved_query(key):
     """Delete a query from KV once it's resolved."""

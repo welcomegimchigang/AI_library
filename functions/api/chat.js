@@ -128,7 +128,7 @@ export async function onRequestPost(context) {
       category: t.serviceType,
       isFree: t.price_bucket === "free",
       thumbnail: t.thumbnail,
-      why: `${t.serviceType || "관련"} 작업에 유용한 AI 툴입니다.`,
+      why: t.description || t.keyFeatures_list?.[0] || `${t.serviceType || "관련"} 작업에 유용한 AI 툴입니다.`,
     }));
 
     return Response.json({
