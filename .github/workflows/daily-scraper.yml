@@ -44,6 +44,10 @@ jobs:
       - name: Run Futurepedia Scraper
         run: python crawler/futurepedia_scraper.py
 
+      # 1.65 TAAFT (theresanaiforthat.com) 에서 대량 크롤링 (매일 10개 카테고리, 최대 150개)
+      - name: Run TAAFT Scraper
+        run: python crawler/taaft_scraper.py
+
       # 1.7 "기타" 카테고리를 키워드 기반으로 적절한 카테고리로 자동 재분류
       - name: Run Category Reclassifier
         run: python scripts/reclassify.py
@@ -55,7 +59,7 @@ jobs:
       - name: Check for DB Changes
         id: db-status
         run: |
-          if [[ -n $(git status -s public/data/tools.jsonl data/futurepedia_progress.json) ]]; then
+          if [[ -n $(git status -s public/data/tools.jsonl data/) ]]; then
             echo "changes=true" >> $GITHUB_OUTPUT
           else
             echo "changes=false" >> $GITHUB_OUTPUT
@@ -66,7 +70,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add public/data/tools.jsonl data/futurepedia_progress.json
+          git add public/data/tools.jsonl data/
           git commit -m "auto: AI 툴 DB 데일리 자동 스크랩 및 업데이트 봇 🤖"
           git pull --rebase origin main
           git push
