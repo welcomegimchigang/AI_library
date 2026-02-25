@@ -40,7 +40,7 @@ export function Header() {
             <Sparkles size={18} />
           </div>
           <span className="text-xl font-black tracking-tight text-slate-900 leading-none">
-            foryou.ai
+            LoominAI
           </span>
         </Link>
 

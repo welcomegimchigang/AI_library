@@ -46,7 +46,7 @@ export function AdminPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
         <Database className="w-12 h-12 text-blue-500 mb-4" />
         <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">
-          foryou.ai 관리자
+          LoominAI 관리자
         </h1>
         <form
           onSubmit={handleLogin}

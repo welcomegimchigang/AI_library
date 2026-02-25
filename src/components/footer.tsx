@@ -13,7 +13,7 @@ export function Footer() {
     <footer className="border-t border-white/20 bg-white/60 py-10 backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 text-sm text-slate-600 md:flex-row md:items-center md:justify-between md:px-6">
         <div className="text-sm text-slate-400">
-          © {new Date().getFullYear()} foryou.ai. All rights reserved.
+          © {new Date().getFullYear()} LoominAI. All rights reserved.
         </div>
         <div className="flex items-center gap-4">
           {links.map((link) => (

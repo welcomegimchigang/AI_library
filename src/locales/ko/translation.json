@@ -8,7 +8,7 @@
     "logout": "로그아웃"
   },
   "home": {
-    "heroBadge": "foryou.ai",
+    "heroBadge": "LoominAI",
     "heroTitle1": "내 작업에 딱 맞는",
     "heroTitle2": "AI 툴을 찾아보세요",
     "heroDesc": "대화 한 번으로 당신의 목적에 가장 부합하는 AI 도구를 찾아 연결해주는 대화형 큐레이션 플랫폼입니다.",
@@ -29,6 +29,6 @@
     "privacy": "개인정보처리방침",
     "contact": "문의사항",
     "email": "이메일 알림",
-    "allRightsReserved": "© 2024 foryou.ai. All rights reserved."
+    "allRightsReserved": "© 2024 LoominAI. All rights reserved."
   }
 }

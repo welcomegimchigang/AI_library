@@ -72,7 +72,7 @@ export async function onRequest(context) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${name} - AI 도구 상세 | foryou.ai</title>
+  <title>${name} - AI 도구 상세 | LoominAI</title>
   <meta name="description" content="${desc}" />
   <meta name="keywords" content="${name}, ${category}, AI 도구, AI tool, 인공지능" />
   <meta property="og:type" content="website" />
@@ -80,7 +80,7 @@ export async function onRequest(context) {
   <meta property="og:description" content="${desc}" />
   <meta property="og:url" content="${siteUrl}" />
   <meta property="og:image" content="${thumbnail}" />
-  <meta property="og:site_name" content="foryou.ai - AI 도구 도서관" />
+  <meta property="og:site_name" content="LoominAI - AI 도구 도서관" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${name}" />
   <meta name="twitter:description" content="${desc}" />

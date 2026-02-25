@@ -16,7 +16,7 @@ export function PrivacyPage() {
             <section>
               <div className="prose prose-slate max-w-none text-slate-600">
                 <p>
-                  foryou.ai(이하 "서비스")는 서비스 이용 과정에서 다음과 같은 최소한의 개인정보를 수집합니다.
+                  LoominAI(이하 "서비스")는 서비스 이용 과정에서 다음과 같은 최소한의 개인정보를 수집합니다.
                 </p>
                 <h3 className="text-lg font-bold text-slate-800 mt-6 mb-2">1. 수집하는 개인정보 항목</h3>
               </div>

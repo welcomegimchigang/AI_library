@@ -11,9 +11,9 @@ export function AboutPage() {
 
           <div className="mt-8 space-y-6 text-slate-700 leading-relaxed">
             <section>
-              <h2 className="text-xl font-bold">foryou.ai란?</h2>
+              <h2 className="text-xl font-bold">LoominAI란?</h2>
               <p className="mt-2 text-slate-700 leading-relaxed">
-                foryou.ai는 전 세계에 흩어져 있는 수백 가지의 AI 도구들을
+                LoominAI는 전 세계에 흩어져 있는 수백 가지의 AI 도구들을
                 사용자의 목적과 상황에 맞게 큐레이션 해주는 서비스입니다.최적의 도구를 빠르게 찾아주는
                 AI 기반 추천 플랫폼입니다.
               </p>
@@ -50,10 +50,10 @@ export function AboutPage() {
               <div className="mt-4 rounded-xl bg-slate-50 p-6 border border-slate-100">
                 <ul className="space-y-2">
                   <li>
-                    <strong>서비스명:</strong> foryou.ai
+                    <strong>서비스명:</strong> LoominAI
                   </li>
                   <li>
-                    <strong>운영자:</strong> foryou.ai Team
+                    <strong>운영자:</strong> LoominAI Team
                   </li>
                   <li>
                     <strong>이메일:</strong> foryouai@ai-library-dhm.pages.dev
