@@ -63,6 +63,30 @@ export function AdminPage() {
     }
   };
 
+  const handleExportCSV = () => {
+    if (feedbacks.length === 0) return;
+
+    // CSV Header
+    const headers = ["ID", "유형", "내용", "연락처", "시간"];
+    const rows = feedbacks.map(f => [
+      f.key,
+      f.data.type,
+      `"${f.data.message.replace(/"/g, '""')}"`, // Handle quotes and commas
+      f.data.contact,
+      f.data.timestamp
+    ]);
+
+    const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `loominai_feedback_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (!metrics && !loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 pt-20">
@@ -145,6 +169,14 @@ export function AdminPage() {
               <MessageSquare className="w-5 h-5 text-emerald-500" />
               유저 건의사항 ({feedbacks.length})
             </h2>
+            {feedbacks.length > 0 && (
+              <button
+                onClick={handleExportCSV}
+                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg transition"
+              >
+                엑셀(CSV) 추출
+              </button>
+            )}
           </div>
           <div className="max-h-[600px] overflow-y-auto">
             {feedbacks.length > 0 ? (
@@ -154,7 +186,7 @@ export function AdminPage() {
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex gap-2">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${f.data.type === 'bug' ? 'bg-red-100 text-red-600' :
-                            f.data.type === 'suggestion' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
+                          f.data.type === 'suggestion' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
                           }`}>
                           {f.data.type}
                         </span>
