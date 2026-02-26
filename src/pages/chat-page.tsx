@@ -136,7 +136,7 @@ export function ChatPage() {
     const isExpired = lastCheck && (Date.now() - parseInt(lastCheck)) > ONE_MONTH;
 
     if (session) {
-      setMaxUsage(15);
+      setMaxUsage(30);
       fetch(`/api/user/profile?email=${encodeURIComponent(session.email)}`)
         .then(res => res.json())
         .then(data => {

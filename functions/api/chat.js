@@ -10,8 +10,8 @@
 } from "../_lib/tools.js";
 import { generateChatLayerWithGpt } from "../_lib/openai.js";
 
-const GUEST_LIMIT = 30; // 사용자 요청에 따라 일단 한도 넉넉히 (수집용)
-const USER_LIMIT = 50;
+const GUEST_LIMIT = 10;
+const USER_LIMIT = 30;
 const RATE_WINDOW = 86400; // 24시간
 
 export async function onRequestPost(context) {
