@@ -295,7 +295,7 @@ export function ChatPage() {
         {
           id: String(Date.now()),
           role: "system",
-          text: "서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
+          text: "금일 대화 횟수를 초과했습니다. 더 많은 대화를 원하시면 로그인 or 토큰 충전 or 광고보기를 진행해주세요.",
         },
       ]);
     } finally {
