@@ -152,21 +152,28 @@ export function ChatPage() {
             setPersona(p);
             localStorage.setItem("user_persona", JSON.stringify(p));
 
-            // DB에 데이터가 있더라도 30일이 지났거나 명시적으로 last_check 기준 체크
-            if (isOverdue) {
+            // DB 프로필의 업데이트 날짜를 확인
+            const dbUpdatedAt = data.profile.updated_at ? new Date(data.profile.updated_at).getTime() : 0;
+            const isDbOverdue = (Date.now() - dbUpdatedAt) > ONE_MONTH;
+
+            // 이미 DB에 정보가 있고, 30일이 지나지 않았다면 모달을 띄우지 않음
+            if (isDbOverdue) {
               setShowPersonaModal(true);
             } else {
-              // 30일 안 지났으면 last_check 갱신해서 연장
+              setShowPersonaModal(false);
+              // 로컬 체크 시간도 갱신
               localStorage.setItem("persona_last_check", Date.now().toString());
             }
           } else {
-            // 정보가 아예 없으면 무조건 노출
+            // DB에 정보가 아예 없으면 무조건 노출
             setShowPersonaModal(true);
           }
         })
         .catch(() => {
+          // 서버 에러 시 로컬 스토리지 정보에 의존
           if (localPersona && !isOverdue) {
             setPersona(JSON.parse(localPersona));
+            setShowPersonaModal(false);
           } else {
             setShowPersonaModal(true);
           }
@@ -175,6 +182,7 @@ export function ChatPage() {
       setMaxUsage(10);
       if (localPersona && !isOverdue) {
         setPersona(JSON.parse(localPersona));
+        setShowPersonaModal(false);
       } else {
         setShowPersonaModal(true);
       }
