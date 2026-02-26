@@ -10,36 +10,54 @@
 } from "../_lib/tools.js";
 import { generateChatLayerWithGpt } from "../_lib/openai.js";
 
-const RATE_LIMIT = 10; // 일일 최대 요청 수
-const RATE_WINDOW = 86400; // 24시간 (초)
+const GUEST_LIMIT = 30; // 사용자 요청에 따라 일단 한도 넉넉히 (수집용)
+const USER_LIMIT = 50;
+const RATE_WINDOW = 86400; // 24시간
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  // Rate limiting (IP 기반, KV 사용)
+  // 1. 기초적인 봇 감지 (User-Agent 검사)
+  const ua = request.headers.get("User-Agent") || "";
+  const isBot = /bot|spider|crawl|headless|selenium|puppeteer/i.test(ua);
+
+  if (isBot) {
+    return Response.json({ error: "Access denied for bots" }, { status: 403 });
+  }
+
   const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
-  // 한국 시간(KST, UTC+9) 기준으로 00:00에 리셋되도록 데이 버킷 계산
+  const body = await request.json().catch(() => ({}));
+  const email = body?.userEmail || ""; // 프론트에서 보내줄 수 있음
+
+  // Rate limiting (IP 또는 이메일 기반)
+  const identifier = email ? `user_${email}` : `ip_${clientIP}`;
   const kstOffset = 9 * 60 * 60 * 1000;
   const dayBucket = Math.floor((Date.now() + kstOffset) / (86400 * 1000));
-  const rateLimitKey = `rate_${clientIP}_${dayBucket}`;
+  const rateLimitKey = `usage_${identifier}_${dayBucket}`;
 
+  let currentUsage = 0;
   if (env.MISSING_TOOLS_KV) {
     try {
-      const current = parseInt(await env.MISSING_TOOLS_KV.get(rateLimitKey) || "0");
-      if (current >= RATE_LIMIT) {
+      currentUsage = parseInt(await env.MISSING_TOOLS_KV.get(rateLimitKey) || "0");
+      const limit = email ? USER_LIMIT : GUEST_LIMIT;
+
+      if (currentUsage >= limit) {
         return Response.json({
-          reply: { text: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
-          state: "collecting", missing: [], quickReplies: [], filters: {}, tools: [],
+          reply: { text: "일일 대화 한도에 도달했습니다. 내일 다시 시도해주세요!" },
+          state: "collecting", tools: [],
         }, { status: 429 });
       }
+
+      // 사용량 증가 (백그라운드)
       context.waitUntil(
-        env.MISSING_TOOLS_KV.put(rateLimitKey, String(current + 1), { expirationTtl: RATE_WINDOW })
+        env.MISSING_TOOLS_KV.put(rateLimitKey, String(currentUsage + 1), { expirationTtl: RATE_WINDOW })
       );
-    } catch { }
+    } catch (e) {
+      console.error("Rate limit check failed:", e);
+    }
   }
 
   try {
-    const body = await request.json();
     const message = String(body?.message || "").trim();
     const prevFilters = body?.filters && typeof body.filters === "object" ? body.filters : {};
     const history = Array.isArray(body?.history) ? body.history : [];

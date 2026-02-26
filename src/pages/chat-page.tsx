@@ -5,6 +5,9 @@
   Sparkles,
   User,
   ExternalLink,
+  Moon,
+  Sun,
+  LogOut,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -41,8 +44,8 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
   } catch { }
 
   return (
-    <div className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-      <div className="w-10 h-10 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+    <div className="flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+      <div className="w-10 h-10 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-center overflow-hidden flex-shrink-0">
         {hostname ? (
           <img
             src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`}
@@ -61,23 +64,23 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h4 className="font-bold text-sm text-slate-900 truncate">
+          <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
             {tool.name}
           </h4>
           <span
-            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${tool.isFree ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${tool.isFree ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400"}`}
           >
             {tool.isFree ? "무료" : "유료/부분유료"}
           </span>
         </div>
-        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
           {tool.why || tool.category}
         </p>
         <a
           href={tool.url}
           target="_blank"
           rel="noreferrer"
-          className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+          className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
         >
           방문하기 <ExternalLink size={10} />
         </a>
@@ -106,22 +109,38 @@ export function ChatPage() {
   const [lastQuery, setLastQuery] = useState("");
   const [persona, setPersona] = useState<Persona | null>(null);
   const [showPersonaModal, setShowPersonaModal] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">(
+    (localStorage.getItem("theme") as "light" | "dark") || "light"
+  );
+  const [usageCount, setUsageCount] = useState(0);
+  const [maxUsage, setMaxUsage] = useState(10);
+  const [isBotProtected, setIsBotProtected] = useState(false);
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // 1. 인구통계 정보 확인
     const session = getUserSession();
     const localPersona = sessionStorage.getItem("user_persona");
+    const lastCheck = localStorage.getItem("persona_last_check");
+    const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
 
-    if (localPersona) {
-      setPersona(JSON.parse(localPersona));
-    } else if (session) {
-      // 로그인 사용자: 서버에서 프로필 가져오기
+    const isExpired = lastCheck && (Date.now() - parseInt(lastCheck)) > ONE_MONTH;
+
+    if (session) {
+      setMaxUsage(15);
       fetch(`/api/user/profile?email=${encodeURIComponent(session.email)}`)
         .then(res => res.json())
         .then(data => {
-          if (data.success && data.profile && data.profile.gender) {
+          if (data.success && data.profile && data.profile.gender && !isExpired) {
             const p = {
               gender: data.profile.gender,
               birthYear: data.profile.birth_year,
@@ -135,19 +154,27 @@ export function ChatPage() {
         })
         .catch(() => setShowPersonaModal(true));
     } else {
-      // 게스트: 모달 표시
-      setShowPersonaModal(true);
+      setMaxUsage(10);
+      if (localPersona && !isExpired) {
+        setPersona(JSON.parse(localPersona));
+      } else {
+        setShowPersonaModal(true);
+      }
     }
+
+    // 초기 사용량 로드 (임시로 로컬이나 세션 활용, 추후 서버 동기화 가능)
+    const storedUsage = sessionStorage.getItem("chat_usage") || "0";
+    setUsageCount(parseInt(storedUsage));
   }, []);
 
   const handleSavePersona = async (data: Persona) => {
     setPersona(data);
     sessionStorage.setItem("user_persona", JSON.stringify(data));
+    localStorage.setItem("persona_last_check", Date.now().toString());
     setShowPersonaModal(false);
 
     const session = getUserSession();
     if (session) {
-      // 로그인 사용자라면 DB에도 영구 저장
       await fetch(`/api/user/profile?email=${encodeURIComponent(session.email)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -196,7 +223,8 @@ export function ChatPage() {
           state: chatState,
           filters: filters,
           history: history,
-          persona: persona, // 인구통계 정보 포함
+          persona: persona,
+          userEmail: getUserSession()?.email, // 서버의 이메일 기반 한도 적용을 위해 추가
         }),
       });
 
@@ -222,9 +250,13 @@ export function ChatPage() {
         setQuickReplies(data.quickReplies.slice(0, 6));
       }
 
-      if (Array.isArray(data.tools)) {
+      if (data.tools) {
         setRecommendedTools(data.tools);
       }
+
+      const newCount = usageCount + 1;
+      setUsageCount(newCount);
+      sessionStorage.setItem("chat_usage", String(newCount));
     } catch (error) {
       console.error("Chat API Error:", error);
       setMessages((prev) => [
@@ -245,27 +277,68 @@ export function ChatPage() {
     : recommendedTools.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(100%_100%_at_0%_0%,#dbeafe_0%,#e9d5ff_45%,#fce7f3_80%,#f8fafc_100%)]">
+    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-[radial-gradient(100%_100%_at_0%_0%,#dbeafe_0%,#e9d5ff_45%,#fce7f3_80%,#f8fafc_100%)]'}`}>
       {showPersonaModal && <PersonaModal onSave={handleSavePersona} initialData={persona} />}
 
-      <header className="sticky top-0 z-30 border-b border-white/30 bg-white/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-white/20 dark:border-slate-800 bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-600 transition-colors"
           >
             <ArrowLeft size={16} />
             {t("nav.home") || "홈으로"}
           </Link>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/75 px-3 py-1 text-sm text-slate-700">
-            <User size={14} />
-            {persona ? `${(new Date().getFullYear() - persona.birthYear) + 1}세 ${persona.gender}` : "Guest User"}
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400"
+            >
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+
+            <div className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 px-3 py-1 text-sm">
+              {getUserSession()?.picture ? (
+                <img src={getUserSession().picture} className="w-5 h-5 rounded-full" alt="profile" />
+              ) : (
+                <User size={14} className="text-slate-400" />
+              )}
+              <span className="font-bold text-slate-700 dark:text-slate-200">
+                {getUserSession() ? getUserSession().name : "Guest"}
+              </span>
+            </div>
+
+            {getUserSession() && (
+              <button
+                onClick={() => {
+                  localStorage.removeItem("user_info");
+                  localStorage.removeItem("google_token");
+                  window.location.reload();
+                }}
+                className="p-2 rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-400 hover:text-rose-500 transition-colors"
+              >
+                <LogOut size={16} />
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-6 md:grid-cols-[1.2fr_0.8fr] md:px-6">
-        <Card className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden bg-white/80">
+        <Card className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden bg-white/80 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 shadow-xl">
+          <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">System Online</span>
+            </div>
+            <div className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+              <span>남은 질문:</span>
+              <span className={`px-1.5 py-0.5 rounded ${usageCount >= maxUsage ? 'bg-rose-100 text-rose-600' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                {Math.max(0, maxUsage - usageCount)} / {maxUsage}
+              </span>
+            </div>
+          </div>
           <div
             ref={scrollRef}
             className="flex-1 space-y-3 overflow-y-auto p-5 scroll-smooth"
@@ -275,9 +348,9 @@ export function ChatPage() {
                 key={m.id}
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm flex flex-col gap-1
                   ${m.role === "assistant"
-                    ? "bg-white text-slate-800 shadow-sm border border-slate-100"
+                    ? "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-sm border border-slate-100 dark:border-slate-700"
                     : m.role === "system"
-                      ? "mx-auto bg-red-50 text-red-600 border border-red-100 text-xs"
+                      ? "mx-auto bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 text-xs"
                       : "ml-auto bg-blue-600 text-white shadow-md"
                   }
                 `}
@@ -298,9 +371,9 @@ export function ChatPage() {
             ))}
 
             {isLoading && (
-              <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-white text-slate-800 shadow-sm border border-slate-100 flex items-center gap-2">
+              <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-2">
                 <Loader2 size={14} className="animate-spin text-slate-400" />
-                <span className="text-slate-500">
+                <span className="text-slate-500 dark:text-slate-400">
                   {t("chat.searching") || "답변을 생성하고 있습니다..."}
                 </span>
               </div>
@@ -314,7 +387,7 @@ export function ChatPage() {
                 <button
                   key={qr}
                   onClick={() => send(qr)}
-                  className="rounded-full border border-blue-600/30 bg-white/50 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                  className="rounded-full border border-blue-600/30 dark:border-blue-500/30 bg-white/50 dark:bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition-colors"
                 >
                   {qr}
                 </button>
@@ -329,7 +402,7 @@ export function ChatPage() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 disabled={isLoading}
-                className="h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
+                className="h-12 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-sm text-slate-900 dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
                 placeholder={
                   t("chat.inputPlaceholder") || "어떤 툴을 찾으시나요?"
                 }
@@ -350,8 +423,8 @@ export function ChatPage() {
         </Card>
 
         <div className="space-y-4">
-          <Card className="p-4 bg-white/80">
-            <h3 className="mb-3 text-sm font-semibold text-slate-800 flex items-center gap-2">
+          <Card className="p-4 bg-white/80 dark:bg-slate-900/90 border-slate-200 dark:border-slate-800 shadow-lg">
+            <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
               <Sparkles size={14} className="text-amber-400" />
               {recommendedTools.length > 0 ? "추천된 AI 툴" : "예시 질문"}
             </h3>

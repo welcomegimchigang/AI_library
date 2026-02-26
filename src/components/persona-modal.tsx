@@ -63,8 +63,8 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                                             key={g}
                                             onClick={() => setData({ ...data, gender: g })}
                                             className={`h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold ${data.gender === g
-                                                    ? "border-blue-500 bg-blue-50 text-blue-600 shadow-md"
-                                                    : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                                                ? "border-blue-500 bg-blue-50 text-blue-600 shadow-md"
+                                                : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
                                                 }`}
                                         >
                                             <User size={24} className={data.gender === g ? "text-blue-500" : "text-slate-300"} />
@@ -93,20 +93,33 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                         {step === 3 && (
                             <div className="animate-in slide-in-from-right-4 duration-300">
                                 <p className="text-sm text-slate-500 mb-4 font-medium">현재 하고 계신 일은 무엇인가요?</p>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2 mb-4">
                                     {jobs.map((j) => (
                                         <button
                                             key={j}
                                             onClick={() => setData({ ...data, job: j })}
                                             className={`py-3 px-4 rounded-xl text-sm font-bold border transition-all ${data.job === j
-                                                    ? "border-blue-500 bg-blue-50 text-blue-600 shadow-sm"
-                                                    : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                                                ? "border-blue-500 bg-blue-50 text-blue-600 shadow-sm"
+                                                : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
                                                 }`}
                                         >
                                             {j}
                                         </button>
                                     ))}
                                 </div>
+                                {(!jobs.filter(j => j !== "기타").includes(data.job)) && (
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <input
+                                            type="text"
+                                            placeholder="직업을 직접 입력해주세요"
+                                            value={data.job === "기타" ? "" : data.job}
+                                            onFocus={(e) => { if (data.job === "기타") e.target.value = ""; }}
+                                            onChange={(e) => setData({ ...data, job: e.target.value })}
+                                            className="w-full px-4 py-3 rounded-xl border border-blue-200 bg-blue-50/30 text-slate-900 dark:text-white dark:bg-slate-900/50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                            autoFocus
+                                        />
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -125,8 +138,8 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                             disabled={!isStepValid()}
                             onClick={handleNext}
                             className={`flex-[2] h-12 rounded-xl font-bold shadow-lg transition-all ${isStepValid()
-                                    ? "bg-blue-600 hover:bg-blue-700 shadow-blue-500/25"
-                                    : "bg-slate-200 text-slate-400"
+                                ? "bg-blue-600 hover:bg-blue-700 shadow-blue-500/25"
+                                : "bg-slate-200 text-slate-400"
                                 }`}
                         >
                             {step === 3 ? "시작하기" : "다음 단계"}
