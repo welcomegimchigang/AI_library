@@ -63,11 +63,11 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                                             key={g}
                                             onClick={() => setData({ ...data, gender: g })}
                                             className={`h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold ${data.gender === g
-                                                ? "border-blue-500 bg-blue-50 text-blue-600 shadow-md"
-                                                : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-md"
+                                                : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 hover:border-slate-200 dark:hover:border-slate-700"
                                                 }`}
                                         >
-                                            <User size={24} className={data.gender === g ? "text-blue-500" : "text-slate-300"} />
+                                            <User size={24} className={data.gender === g ? "text-blue-500" : "text-slate-300 dark:text-slate-600"} />
                                             {g}
                                         </button>
                                     ))}
@@ -82,9 +82,13 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                                     <select
                                         value={data.birthYear}
                                         onChange={(e) => setData({ ...data, birthYear: parseInt(e.target.value) })}
-                                        className="w-full bg-transparent text-lg font-black text-center focus:outline-none"
+                                        className="w-full bg-transparent text-lg font-black text-center focus:outline-none text-slate-900 dark:text-white"
                                     >
-                                        {years.map(y => <option key={y} value={y}>{y}년생 ({(new Date().getFullYear() - y) + 1}세)</option>)}
+                                        {years.map(y => (
+                                            <option key={y} value={y} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold">
+                                                {y}년생 ({(new Date().getFullYear() - y) + 1}세)
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
@@ -99,8 +103,8 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                                             key={j}
                                             onClick={() => setData({ ...data, job: j })}
                                             className={`py-3 px-4 rounded-xl text-sm font-bold border transition-all ${data.job === j
-                                                ? "border-blue-500 bg-blue-50 text-blue-600 shadow-sm"
-                                                : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm"
+                                                : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 hover:border-slate-200 dark:hover:border-slate-700"
                                                 }`}
                                         >
                                             {j}

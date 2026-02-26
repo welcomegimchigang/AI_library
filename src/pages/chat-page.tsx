@@ -131,14 +131,15 @@ export function ChatPage() {
     const lastCheck = localStorage.getItem("persona_last_check");
     const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
 
-    const needsCheck = !lastCheck || (Date.now() - parseInt(lastCheck)) > ONE_MONTH;
+    // 현재 시간 기준 체크 필요 여부 (30일 경과 또는 최초 방문)
+    const isOverdue = !lastCheck || (Date.now() - parseInt(lastCheck)) > ONE_MONTH;
 
     if (session) {
       setMaxUsage(30);
       fetch(`/api/user/profile?email=${encodeURIComponent(session.email)}`)
         .then(res => res.json())
         .then(data => {
-          if (data.success && data.profile && data.profile.gender && !needsCheck) {
+          if (data.success && data.profile && data.profile.gender) {
             const p = {
               gender: data.profile.gender,
               birthYear: data.profile.birth_year,
@@ -146,14 +147,26 @@ export function ChatPage() {
             };
             setPersona(p);
             localStorage.setItem("user_persona", JSON.stringify(p));
+
+            // DB에 데이터가 있더라도 30일이 지났다면 한번은 다시 갱신 요청
+            if (isOverdue) {
+              setShowPersonaModal(true);
+            }
           } else {
+            // 정보가 아예 없으면 무조건 노출
             setShowPersonaModal(true);
           }
         })
-        .catch(() => setShowPersonaModal(true));
+        .catch(() => {
+          if (localPersona && !isOverdue) {
+            setPersona(JSON.parse(localPersona));
+          } else {
+            setShowPersonaModal(true);
+          }
+        });
     } else {
       setMaxUsage(10);
-      if (localPersona && !needsCheck) {
+      if (localPersona && !isOverdue) {
         setPersona(JSON.parse(localPersona));
       } else {
         setShowPersonaModal(true);
