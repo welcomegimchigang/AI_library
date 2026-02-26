@@ -95,7 +95,7 @@ export function AdminPage() {
             <Database className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
           <h1 className="text-xl font-bold mb-2 text-center text-slate-900 dark:text-slate-100">
-            LoominAI Admin
+            LoominAI 관리자
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 text-center mb-8">액세스 권한이 필요합니다.</p>
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -126,7 +126,7 @@ export function AdminPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-3">
               <Database className="w-8 h-8 text-blue-600" />
-              LoominAI Management Console
+              LoominAI 관리 콘솔
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">실시간 서비스 지표 및 유저 피드백 통합 관리</p>
           </div>
@@ -144,21 +144,21 @@ export function AdminPage() {
         {/* Metrics Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           <div className="bg-white dark:bg-slate-900 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest mb-2">Total Search Queries</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest mb-2">전체 검색 쿼리</p>
             <p className="text-2xl font-black">{metrics?.stats?.total_queries?.toLocaleString() || 0}</p>
           </div>
           <div className="bg-white dark:bg-slate-900 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-            <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-black uppercase tracking-widest mb-2">Success Rate</p>
+            <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-black uppercase tracking-widest mb-2">검색 성공률</p>
             <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{metrics?.stats?.success_rate || "0%"}</p>
           </div>
           <div className="bg-white dark:bg-slate-900 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-            <p className="text-[10px] text-rose-600 dark:text-rose-500 font-black uppercase tracking-widest mb-2">Missed Opportunities</p>
+            <p className="text-[10px] text-rose-600 dark:text-rose-500 font-black uppercase tracking-widest mb-2">미충족 수요 (결과 없음)</p>
             <p className="text-2xl font-black text-rose-600 dark:text-rose-400">
               {(metrics?.stats?.total_queries - metrics?.stats?.successful_queries) || 0}
             </p>
           </div>
           <div className="bg-white dark:bg-slate-900 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-            <p className="text-[10px] text-blue-600 dark:text-blue-500 font-black uppercase tracking-widest mb-2">Active Feedbacks</p>
+            <p className="text-[10px] text-blue-600 dark:text-blue-500 font-black uppercase tracking-widest mb-2">활성 피드백 건수</p>
             <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{feedbacks.length}</p>
           </div>
         </div>
@@ -167,13 +167,13 @@ export function AdminPage() {
         <div className="mb-10">
           <div className="flex items-center gap-2 mb-6">
             <LineChart className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-bold">Demographic Demand Analysis</h2>
+            <h2 className="text-lg font-bold">인구통계별 수요 분석 (페르소나)</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Gender Demand */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
               <div className="px-4 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">By Gender</span>
+                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">성별</span>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {metrics?.persona_metrics?.gender?.map((item: any, i: number) => (
@@ -182,7 +182,7 @@ export function AdminPage() {
                       <span className="text-[10px] text-slate-400 font-bold">{item.user_gender}</span>
                       <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.gpt_intent}</span>
                     </div>
-                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count} hits</span>
+                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}회</span>
                   </div>
                 ))}
               </div>
@@ -191,7 +191,7 @@ export function AdminPage() {
             {/* Age Demand */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
               <div className="px-4 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">By Age Group</span>
+                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">연령대별</span>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {metrics?.persona_metrics?.age?.map((item: any, i: number) => (
@@ -200,7 +200,7 @@ export function AdminPage() {
                       <span className="text-[10px] text-slate-400 font-bold">{item.age_range}</span>
                       <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.gpt_intent}</span>
                     </div>
-                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count} hits</span>
+                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}회</span>
                   </div>
                 ))}
               </div>
@@ -209,7 +209,7 @@ export function AdminPage() {
             {/* Job Demand */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
               <div className="px-4 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">By Profession</span>
+                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">직업별</span>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {metrics?.persona_metrics?.job?.map((item: any, i: number) => (
@@ -218,7 +218,7 @@ export function AdminPage() {
                       <span className="text-[10px] text-slate-400 font-bold">{item.user_job}</span>
                       <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.gpt_intent}</span>
                     </div>
-                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count} hits</span>
+                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}회</span>
                   </div>
                 ))}
               </div>
@@ -232,14 +232,14 @@ export function AdminPage() {
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-850">
               <h2 className="text-md font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
                 <MessageSquare className="w-5 h-5 text-blue-600" />
-                User Feedback Pipeline
+                유저 피드백 파이프라인
               </h2>
               {feedbacks.length > 0 && (
                 <button
                   onClick={handleExportCSV}
                   className="text-[10px] font-black tracking-tight text-white bg-slate-900 dark:bg-blue-600 hover:opacity-90 px-3 py-1.5 rounded-md uppercase transition-all"
                 >
-                  Export CSV
+                  CSV 추출
                 </button>
               )}
             </div>
@@ -251,8 +251,8 @@ export function AdminPage() {
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${f.data.type === 'bug' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400' :
-                              f.data.type === 'suggestion' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
-                                'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                            f.data.type === 'suggestion' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
+                              'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
                             }`}>
                             {f.data.type}
                           </span>
@@ -271,8 +271,8 @@ export function AdminPage() {
                         {f.data.message}
                       </p>
                       <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-500 border-t border-slate-50 dark:border-slate-800 pt-3">
-                        <span className="font-bold">Requester:</span>
-                        <span>{f.data.contact || "Anonymous"}</span>
+                        <span className="font-bold">요청자:</span>
+                        <span>{f.data.contact || "익명"}</span>
                       </div>
                     </div>
                   ))}
@@ -280,7 +280,7 @@ export function AdminPage() {
               ) : (
                 <div className="h-full flex flex-col items-center justify-center p-20 text-slate-400 bg-slate-50/50 dark:bg-slate-900/50">
                   <MessageSquare className="w-12 h-12 mb-4 opacity-10" />
-                  <p className="text-sm font-medium">No feedback recorded yet.</p>
+                  <p className="text-sm font-medium">아직 접수된 피드백이 없습니다.</p>
                 </div>
               )}
             </div>
@@ -292,16 +292,16 @@ export function AdminPage() {
               <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850">
                 <h2 className="text-md font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
                   <AlertCircle className="w-5 h-5 text-orange-500" />
-                  Unmet Search Demand
+                  미충족 검색 요구 (결과 없음)
                 </h2>
               </div>
               <div className="max-h-[300px] overflow-y-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="sticky top-0 bg-slate-50 dark:bg-slate-850 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">
                     <tr>
-                      <th className="px-6 py-3">Query Keyword</th>
-                      <th className="px-6 py-3">Intent</th>
-                      <th className="px-6 py-3 text-right">Date</th>
+                      <th className="px-6 py-3">검색 키워드</th>
+                      <th className="px-6 py-3">의도</th>
+                      <th className="px-6 py-3 text-right">날짜</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -318,7 +318,7 @@ export function AdminPage() {
                     ))}
                     {(!metrics?.missing_queries || metrics.missing_queries.length === 0) && (
                       <tr>
-                        <td colSpan={3} className="px-6 py-10 text-center text-slate-400">Perfect match rate. No missing queries. ✨</td>
+                        <td colSpan={3} className="px-6 py-10 text-center text-slate-400">매칭 실패 쿼리가 없습니다. ✨</td>
                       </tr>
                     )}
                   </tbody>
@@ -331,7 +331,7 @@ export function AdminPage() {
               <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850">
                 <h2 className="text-md font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
                   <Search className="w-5 h-5 text-blue-500" />
-                  Popular Intent Rankings (7D)
+                  실시간 인기 분야 (최근 7일)
                 </h2>
               </div>
               <div>
@@ -340,7 +340,7 @@ export function AdminPage() {
                     {metrics?.top_intents?.map((intent: any, idx: number) => (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-6 py-3.5 font-bold text-slate-700 dark:text-slate-300">{intent.gpt_intent}</td>
-                        <td className="px-6 py-3.5 text-right font-black text-blue-600 dark:text-blue-400">{intent.count} queries</td>
+                        <td className="px-6 py-3.5 text-right font-black text-blue-600 dark:text-blue-400">{intent.count}회 검색</td>
                       </tr>
                     ))}
                   </tbody>
