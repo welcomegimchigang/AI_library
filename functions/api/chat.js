@@ -10,15 +10,18 @@
 } from "../_lib/tools.js";
 import { generateChatLayerWithGpt } from "../_lib/openai.js";
 
-const RATE_LIMIT = 30; // 시간당 최대 요청 수
-const RATE_WINDOW = 3600; // 1시간 (초)
+const RATE_LIMIT = 10; // 일일 최대 요청 수
+const RATE_WINDOW = 86400; // 24시간 (초)
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   // Rate limiting (IP 기반, KV 사용)
   const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
-  const rateLimitKey = `rate_${clientIP}_${Math.floor(Date.now() / (RATE_WINDOW * 1000))}`;
+  // 한국 시간(KST, UTC+9) 기준으로 00:00에 리셋되도록 데이 버킷 계산
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const dayBucket = Math.floor((Date.now() + kstOffset) / (86400 * 1000));
+  const rateLimitKey = `rate_${clientIP}_${dayBucket}`;
 
   if (env.MISSING_TOOLS_KV) {
     try {
@@ -44,11 +47,11 @@ export async function onRequestPost(context) {
     // 1. AI에게 의도(Intent) 파악 및 필터 추출 요청
     const gpt = await generateChatLayerWithGpt(env, { message, history });
 
-    // 2. Case A: 무관한 질문이거나 프롬프트 응답 실패 (매크로 1)
+    // 2. Case A: 무관한 질문이거나 프롬프트 응답 실패
     if (!gpt || gpt.intent === "off_topic") {
       return Response.json({
         reply: {
-          text: "안녕하세요! 저는 AI 툴 추천 챗봇이기에 해당 문의에 대해선 답변할 수 없습니다.",
+          text: gpt?.reply || "안녕하세요! 저는 AI 툴 추천 챗봇입니다. 무엇을 도와드릴까요?",
         },
         state: "collecting",
         missing: [],
@@ -133,7 +136,7 @@ export async function onRequestPost(context) {
 
     return Response.json({
       reply: {
-        text: "요청하신 조건에 맞는 AI 툴을 추천해 드립니다. 아래 카드를 확인해보세요!",
+        text: gpt?.reply || "요청하신 조건에 맞는 AI 툴을 추천해 드립니다. 아래 카드를 확인해보세요!",
       },
       state: "recommended",
       missing: [],

@@ -10,6 +10,7 @@ import { ToolDetailPage } from "@/pages/tool-detail-page";
 import { AdminPage } from "@/pages/admin-page";
 import { ProfilePage } from "@/pages/profile-page";
 import { SubmitToolPage } from "@/pages/submit-tool-page";
+import { FeedbackPage } from "@/pages/feedback-page";
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/submit" element={<SubmitToolPage />} />
+      <Route path="/feedback" element={<FeedbackPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

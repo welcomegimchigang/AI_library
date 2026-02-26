@@ -4,6 +4,7 @@ const links = [
   { label: "서비스 소개", to: "/about" },
   { label: "AI 추천 채팅", to: "/chat" },
   { label: "AI 도구 등록", to: "/submit" },
+  { label: "건의 및 피드백", to: "/feedback" },
   { label: "개인정보처리방침", to: "/privacy" },
   { label: "이용약관", to: "/terms" },
 ];
