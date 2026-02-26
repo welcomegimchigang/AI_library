@@ -74,6 +74,12 @@ function ToolLogo({ url, name }: { url: string; name: string }) {
   );
 }
 
+const formatNumber = (num: number) => {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+  return num.toString();
+};
+
 export function ToolLibrary() {
   const { t } = useTranslation();
   const {
@@ -444,7 +450,11 @@ export function ToolLibrary() {
                       <ThumbsUp size={16} className="mr-2" />
                       {t("library.upvote")} {upvotes[tool.id] || 0}
                     </Button>
-                    <div className="flex-1" />
+                    <div className="flex-1 flex flex-col items-end">
+                      <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                        {t("library.visits", { count: formatNumber(tool.monthly_visits || 0) })}
+                      </span>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"

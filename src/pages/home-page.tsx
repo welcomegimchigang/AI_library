@@ -16,54 +16,57 @@ import { Header } from "@/components/header";
 import { ToolLibrary } from "@/components/tool-library";
 import { Button } from "@/components/ui/button";
 
-const features = [
-  {
-    icon: <Bot size={28} className="text-blue-500" />,
-    title: "AI 기반 맞춤 추천",
-    desc: "AI가 질문의 의도를 분석하여, 데이터베이스에서 최적의 도구를 즉시 선별합니다.",
-  },
-  {
-    icon: <Zap size={28} className="text-amber-500" />,
-    title: "실시간 업데이트",
-    desc: "엄선된 최고의 AI 도구를 업데이트합니다.",
-  },
-  {
-    icon: <Globe size={28} className="text-emerald-500" />,
-    title: "완전 한국어 지원",
-    desc: "전 세계 AI 도구의 이름과 설명을 모두 한국어로 번역하여 제공합니다.",
-  },
-  {
-    icon: <Shield size={28} className="text-purple-500" />,
-    title: "무료/유료 한눈에 비교",
-    desc: "가격 정보와 카테고리 태그로 필요한 조건에 맞는 도구를 빠르게 필터링할 수 있습니다.",
-  },
-  {
-    icon: <Search size={28} className="text-cyan-500" />,
-    title: "수요 기반 자동 추가",
-    desc: "오늘 찾는 도구가 없다면 AI가 자동으로 다음 날 등록해 드립니다.",
-  },
-];
+// Features and Steps will be handled inside the component to use translation hooks
 
-const steps = [
-  {
-    num: "01",
-    title: "요구사항 입력",
-    desc: '원하는 작업이나 조건을 채팅창에 자연어로 입력합니다. 예: "영상 편집용 무료 AI 추천해줘"',
-  },
-  {
-    num: "02",
-    title: "AI 분석 및 추천",
-    desc: "AI가 의도를 분석하고, 데이터베이스에서 조건에 맞는 최적의 도구를 필터링합니다.",
-  },
-  {
-    num: "03",
-    title: "비교 후 바로 실행",
-    desc: "추천된 도구의 기능, 가격, 리뷰를 비교한 뒤 공식 사이트로 바로 이동하여 사용을 시작합니다.",
-  },
-];
+// Steps moved inside HomePage
 
 export function HomePage() {
   const { t } = useTranslation();
+  const features = [
+    {
+      icon: <Bot size={28} className="text-blue-500" />,
+      title: t("home.features.recommend.title"),
+      desc: t("home.features.recommend.desc"),
+    },
+    {
+      icon: <Zap size={28} className="text-amber-500" />,
+      title: t("home.features.update.title"),
+      desc: t("home.features.update.desc"),
+    },
+    {
+      icon: <Globe size={28} className="text-emerald-500" />,
+      title: t("home.features.korean.title"),
+      desc: t("home.features.korean.desc"),
+    },
+    {
+      icon: <Shield size={28} className="text-purple-500" />,
+      title: t("home.features.compare.title"),
+      desc: t("home.features.compare.desc"),
+    },
+    {
+      icon: <Search size={28} className="text-cyan-500" />,
+      title: t("home.features.demand.title"),
+      desc: t("home.features.demand.desc"),
+    },
+  ];
+
+  const steps = [
+    {
+      num: "01",
+      title: t("home.steps.01.title"),
+      desc: t("home.steps.01.desc"),
+    },
+    {
+      num: "02",
+      title: t("home.steps.02.title"),
+      desc: t("home.steps.02.desc"),
+    },
+    {
+      num: "03",
+      title: t("home.steps.03.title"),
+      desc: t("home.steps.03.desc"),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[radial-gradient(120%_80%_at_10%_0%,#dbeafe_0%,#e9d5ff_40%,#fce7f3_75%,#f8fafc_100%)] dark:bg-slate-950 dark:bg-none text-slate-900 dark:text-slate-100 transition-colors duration-500">
@@ -112,10 +115,10 @@ export function HomePage() {
         >
           <div className="text-center">
             <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
-              왜 LoominAI인가요?
+              {t("home.whyTitle")}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
-              다른 AI 도구 사이트와 차별화되는 핵심 기능
+              {t("home.whyDesc")}
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -146,11 +149,11 @@ export function HomePage() {
 
         {/* How to Use */}
         <section className="mx-auto w-full max-w-6xl px-4 py-16 md:px-6">
-          <div className="rounded-3xl border border-white/40 bg-white/70 p-8 shadow-xl backdrop-blur md:p-12">
+          <div className="rounded-3xl border border-white/40 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-8 shadow-xl backdrop-blur md:p-12">
             <div className="text-center mb-10">
-              <h2 className="text-2xl font-bold md:text-3xl">이용 가이드</h2>
-              <p className="mt-2 text-slate-500">
-                3단계로 완성되는 AI 도구 탐색
+              <h2 className="text-2xl font-bold md:text-3xl text-slate-900 dark:text-white">{t("home.guideTitle")}</h2>
+              <p className="mt-2 text-slate-500 dark:text-slate-400">
+                {t("home.guideDesc")}
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-3">

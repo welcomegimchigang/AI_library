@@ -15,7 +15,47 @@
     "heroTitle2": "tailored for your tasks",
     "heroDesc": "A conversational curation platform that connects you with the perfect AI tools for your objectives in a single prompt.",
     "ctaStart": "Start Now",
-    "ctaExplore": "Explore Tools"
+    "ctaExplore": "Explore Tools",
+    "whyTitle": "Why LoominAI?",
+    "whyDesc": "Core features that set us apart from other AI tool directories",
+    "features": {
+      "recommend": {
+        "title": "AI-Powered Recommendations",
+        "desc": "AI analyzes your intent to instantly select the best tools from our database."
+      },
+      "update": {
+        "title": "Real-time Updates",
+        "desc": "We keep our database fresh with only the best curated AI tools."
+      },
+      "korean": {
+        "title": "Full Multilingual Support",
+        "desc": "All tool names and descriptions are localized to provide the best experience."
+      },
+      "compare": {
+        "title": "Easy Pricing Comparison",
+        "desc": "Quickly filter by pricing models and categories to find exactly what you need."
+      },
+      "demand": {
+        "title": "Demand-Based Auto-Addition",
+        "desc": "If you can't find a tool, our AI automatically registers it the next day."
+      }
+    },
+    "guideTitle": "User Guide",
+    "guideDesc": "Explore AI tools in 3 simple steps",
+    "steps": {
+      "01": {
+        "title": "Input Requirements",
+        "desc": "Type your needs in natural language. e.g., 'Recommend a free AI for video editing.'"
+      },
+      "02": {
+        "title": "AI Analysis",
+        "desc": "AI analyzes your intent and filters the best tools based on your criteria."
+      },
+      "03": {
+        "title": "Compare & Launch",
+        "desc": "Compare features, pricing, and reviews, then jump straight to the official site."
+      }
+    }
   },
   "chat": {
     "title": "How can I help you?",
@@ -86,7 +126,8 @@
     "compareDescription": "Description",
     "compareUpvotes": "Upvotes",
     "compareLink": "Link",
-    "close": "Close"
+    "close": "Close",
+    "visits": "{{count}} monthly visits"
   },
   "review": {
     "title": "{{name}} Reviews",
