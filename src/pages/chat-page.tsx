@@ -288,9 +288,6 @@ export function ChatPage() {
         setRecommendedTools(data.tools);
       }
 
-      const newCount = usageCount + 1;
-      setUsageCount(newCount);
-      sessionStorage.setItem("chat_usage", String(newCount));
     } catch (error) {
       console.error("Chat API Error:", error);
       setMessages((prev) => [
