@@ -64,13 +64,10 @@ export async function onRequest(context) {
     `).run();
 
     // Migration for existing search_logs table
-    try {
-      await env.DB.prepare("ALTER TABLE search_logs ADD COLUMN user_gender TEXT").run();
-      await env.DB.prepare("ALTER TABLE search_logs ADD COLUMN user_birth_year INTEGER").run();
-      await env.DB.prepare("ALTER TABLE search_logs ADD COLUMN user_job TEXT").run();
-    } catch (e) {
-      // Columns might already exist
-    }
+    // 기존에 여러 ALTER 구문이 하나의 try-catch 블록 안에 있어서 첫번째 구문 실패시(이미 존재) 하위 구문이 실행되지 않는 문제 수정
+    try { await env.DB.prepare("ALTER TABLE search_logs ADD COLUMN user_gender TEXT").run(); } catch (e) { }
+    try { await env.DB.prepare("ALTER TABLE search_logs ADD COLUMN user_birth_year INTEGER").run(); } catch (e) { }
+    try { await env.DB.prepare("ALTER TABLE search_logs ADD COLUMN user_job TEXT").run(); } catch (e) { }
 
     // 신규: 유저 프로필 테이블 (로그인 유저용)
     await env.DB.prepare(`
