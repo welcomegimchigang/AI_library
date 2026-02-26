@@ -81,7 +81,7 @@ const formatNumber = (num: number) => {
 };
 
 export function ToolLibrary() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     tools,
     loading: toolsLoading,
