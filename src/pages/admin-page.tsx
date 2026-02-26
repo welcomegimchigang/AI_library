@@ -1,26 +1,36 @@
 import { useEffect, useState } from "react";
-import { LineChart, Search, AlertCircle, Database } from "lucide-react";
+import { LineChart, Search, AlertCircle, Database, MessageSquare, Trash2, RefreshCw } from "lucide-react";
 
 export function AdminPage() {
   const [secret, setSecret] = useState(
     localStorage.getItem("admin_secret") || "",
   );
   const [metrics, setMetrics] = useState<any>(null);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchMetrics = async (currentSecret: string) => {
+  const fetchAllData = async (currentSecret: string) => {
     if (!currentSecret) return;
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/metrics?secret=${currentSecret}`);
-      if (!res.ok)
+      // 1. Fetch Metrics (D1)
+      const resMetrics = await fetch(`/api/admin/metrics?secret=${currentSecret}`);
+      if (!resMetrics.ok)
         throw new Error(
-          res.status === 401 ? "비밀번호가 틀렸습니다." : "데이터 로드 실패",
+          resMetrics.status === 401 ? "비밀번호가 틀렸습니다." : "데이터 로드 실패",
         );
-      const data = await res.json();
-      setMetrics(data.data);
+      const dataMetrics = await resMetrics.json();
+      setMetrics(dataMetrics.data);
+
+      // 2. Fetch Feedbacks (KV)
+      const resFeedbacks = await fetch(`/api/feedback?action=list&secret=${currentSecret}`);
+      if (resFeedbacks.ok) {
+        const dataFeedbacks = await resFeedbacks.json();
+        setFeedbacks(dataFeedbacks.data || []);
+      }
+
       localStorage.setItem("admin_secret", currentSecret);
     } catch (err: any) {
       setError(err.message);
@@ -32,18 +42,30 @@ export function AdminPage() {
 
   useEffect(() => {
     if (secret) {
-      fetchMetrics(secret);
+      fetchAllData(secret);
     }
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchMetrics(secret);
+    fetchAllData(secret);
+  };
+
+  const handleDeleteFeedback = async (key: string) => {
+    if (!confirm("이 피드백을 삭제하시겠습니까?")) return;
+    try {
+      const res = await fetch(`/api/feedback?action=delete&secret=${secret}&key=${key}`);
+      if (res.ok) {
+        setFeedbacks(prev => prev.filter(f => f.key !== key));
+      }
+    } catch (err) {
+      alert("삭제 실패");
+    }
   };
 
   if (!metrics && !loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 pt-20">
         <Database className="w-12 h-12 text-blue-500 mb-4" />
         <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">
           LoominAI 관리자
@@ -61,151 +83,157 @@ export function AdminPage() {
           />
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition shadow-lg shadow-blue-500/20"
           >
             접속하기
           </button>
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          {error && <p className="text-red-500 text-sm mt-2 font-medium">{error}</p>}
         </form>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-4">
+    <div className="max-w-6xl mx-auto py-10 px-4">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <LineChart className="w-6 h-6 text-blue-500" />
-          수요 분석 대시보드
+        <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+          <Database className="w-7 h-7 text-blue-600" />
+          LoominAI Dashboard
         </h1>
         <button
-          onClick={() => fetchMetrics(secret)}
-          className="text-sm px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition"
+          onClick={() => fetchAllData(secret)}
+          className="flex items-center gap-2 text-sm px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300 rounded-xl transition shadow-sm"
         >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? "로딩 중..." : "새로고침"}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-            총 검색 횟수
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-1">
+            Total Queries
           </p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-            {metrics?.stats?.total_queries || 0}회
+          <p className="text-3xl font-black text-gray-900 dark:text-white">
+            {metrics?.stats?.total_queries || 0}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-            추천 성공률
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-1">
+            Success Rate
           </p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+          <p className="text-3xl font-black text-emerald-500">
             {metrics?.stats?.success_rate || "0%"}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-            실패(결핍) 횟수
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-1">
+            Missing Needs
           </p>
-          <p className="text-3xl font-bold text-red-500 mt-2">
-            {metrics?.stats?.total_queries -
-              metrics?.stats?.successful_queries || 0}
-            회
+          <p className="text-3xl font-black text-red-500">
+            {(metrics?.stats?.total_queries - metrics?.stats?.successful_queries) || 0}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Top Intents */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <Search className="w-5 h-5 text-gray-400" />
-              최근 7일 인기 분야
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* User Feedbacks (New) */}
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <h2 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-3">
+              <MessageSquare className="w-5 h-5 text-emerald-500" />
+              유저 건의사항 ({feedbacks.length})
             </h2>
           </div>
-          <div className="p-0">
-            <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
-              <thead className="bg-gray-50 dark:bg-gray-800/50">
-                <tr>
-                  <th className="px-6 py-3 font-medium">의도 (Intent)</th>
-                  <th className="px-6 py-3 font-medium">검색량</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {metrics?.top_intents?.map((intent: any, idx: number) => (
-                  <tr
-                    key={idx}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  >
-                    <td className="px-6 py-4">{intent.gpt_intent}</td>
-                    <td className="px-6 py-4">{intent.count}</td>
-                  </tr>
-                ))}
-                {(!metrics?.top_intents ||
-                  metrics.top_intents.length === 0) && (
-                    <tr>
-                      <td
-                        colSpan={2}
-                        className="px-6 py-8 text-center text-gray-400"
+          <div className="max-h-[600px] overflow-y-auto">
+            {feedbacks.length > 0 ? (
+              <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                {feedbacks.sort((a, b) => b.key.localeCompare(a.key)).map((f: any) => (
+                  <li key={f.key} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition group">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${f.data.type === 'bug' ? 'bg-red-100 text-red-600' :
+                            f.data.type === 'suggestion' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
+                          }`}>
+                          {f.data.type}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {new Date(f.data.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteFeedback(f.key)}
+                        className="text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
                       >
-                        데이터가 없습니다.
-                      </td>
-                    </tr>
-                  )}
-              </tbody>
-            </table>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed mb-3">
+                      {f.data.message}
+                    </p>
+                    <div className="text-[10px] text-gray-400 font-medium">
+                      Contact: {f.data.contact}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="py-20 text-center text-gray-400 font-medium">
+                아직 유저 피드백이 없습니다.
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Missing Queries */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-400" />
-              최근 결핍 키워드 (실패 건)
-            </h2>
-          </div>
-          <ul className="divide-y divide-gray-100 dark:divide-gray-700 max-h-[400px] overflow-y-auto">
-            {metrics?.missing_queries?.map((mq: any, idx: number) => {
-              const filters = mq.gpt_filters ? JSON.parse(mq.gpt_filters) : {};
-              const filterKeys = Object.entries(filters)
-                .filter(([_, v]) => v)
-                .map(([k, v]) => `${k}:${v}`)
-                .join(", ");
-              return (
-                <li
-                  key={idx}
-                  className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition"
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      "{mq.user_query}"
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {new Date(mq.created_at).toLocaleDateString()}
-                    </span>
+        <div className="flex flex-col gap-10">
+          {/* Missing Queries */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+              <h2 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-orange-500" />
+                결핍 키워드
+              </h2>
+            </div>
+            <ul className="divide-y divide-gray-100 dark:divide-gray-700 max-h-[300px] overflow-y-auto">
+              {metrics?.missing_queries?.map((mq: any, idx: number) => (
+                <li key={idx} className="p-5 hover:bg-gray-50 dark:hover:bg-gray-750 transition">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-gray-900 dark:text-white">"{mq.user_query}"</span>
+                    <span className="text-[10px] text-gray-400">{new Date(mq.created_at).toLocaleDateString()}</span>
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-2 mt-2">
-                    <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-xs">
-                      {mq.gpt_intent}
-                    </span>
-                    {filterKeys && (
-                      <span className="text-xs text-gray-400">
-                        필터: {filterKeys}
-                      </span>
-                    )}
+                  <div className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 w-fit px-2 py-0.5 rounded">
+                    Intent: {mq.gpt_intent}
                   </div>
                 </li>
-              );
-            })}
-            {(!metrics?.missing_queries ||
-              metrics.missing_queries.length === 0) && (
-                <li className="p-8 text-center text-gray-400">
-                  결핍 키워드가 없습니다. 훌륭합니다!
-                </li>
+              ))}
+              {(!metrics?.missing_queries || metrics.missing_queries.length === 0) && (
+                <li className="p-10 text-center text-gray-400">키워드가 없습니다. ✨</li>
               )}
-          </ul>
+            </ul>
+          </div>
+
+          {/* Top Intents */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+              <h2 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-3">
+                <Search className="w-5 h-5 text-blue-500" />
+                인기 분야 (최근 7일)
+              </h2>
+            </div>
+            <div className="p-2">
+              <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {metrics?.top_intents?.map((intent: any, idx: number) => (
+                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition">
+                      <td className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{intent.gpt_intent}</td>
+                      <td className="px-4 py-3 text-right font-black text-blue-600">{intent.count}회</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
