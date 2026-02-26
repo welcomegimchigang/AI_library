@@ -5,7 +5,9 @@
     "features": "기능",
     "startChat": "채팅 시작",
     "profile": "마이페이지",
-    "logout": "로그아웃"
+    "logout": "로그아웃",
+    "switchToEnglish": "English로 전환",
+    "switchToKorean": "한국어로 전환"
   },
   "home": {
     "heroBadge": "LoominAI",
@@ -20,7 +22,82 @@
     "subtitle": "업무, 창작, 일상 어떤 목적이든 딱 맞는 AI를 찾아드려요.",
     "inputPlaceholder": "어떤 AI가 필요하신가요? (예: 취업용 영문 이력서 교정해 주는 앱 찾아줘)",
     "send": "전송",
-    "searching": "추천 도구 찾는 중..."
+    "searching": "추천 도구 찾는 중...",
+    "quotaExceeded": "금일 대화 횟수를 초과했습니다. 더 많은 대화를 원하시면 로그인 or 토큰 충전 or 광고보기를 진행해주세요."
+  },
+  "persona": {
+    "title": "나만의 추천 프로필 설정",
+    "step": "단계",
+    "gender": {
+      "label": "성별을 선택해주세요.",
+      "male": "남성",
+      "female": "여성"
+    },
+    "birthYear": {
+      "label": "태어난 연도를 알려주세요.",
+      "suffix": "년생"
+    },
+    "job": {
+      "label": "현재 하고 계신 일은 무엇인가요?",
+      "placeholder": "직업을 직접 입력해주세요",
+      "student": "학생",
+      "jobseeker": "취준생",
+      "officeWorker": "직장인",
+      "professional": "전문직",
+      "entrepreneur": "자영업/사업가",
+      "freelancer": "프리랜서",
+      "homemaker": "주부",
+      "other": "기타"
+    },
+    "next": "다음 단계",
+    "back": "이전",
+    "start": "시작하기"
+  },
+  "library": {
+    "trending": "실력파 인기 AI 툴",
+    "categories": {
+      "all": "전체",
+      "image": "이미지/아트",
+      "text": "텍스트/문서",
+      "dev": "개발/코드",
+      "video": "비디오/오디오",
+      "edu": "교육/학습",
+      "health": "건강/피트니스",
+      "biz": "비즈니스/마케팅",
+      "prod": "생산성/협업",
+      "finance": "금융/투자",
+      "other": "기타"
+    },
+    "sort": {
+      "popularity": "인기순",
+      "newest": "최신순"
+    },
+    "upvote": "추천",
+    "visit": "방문하기",
+    "alreadyUpvoted": "해당 AI 툴은 하루에 한 번만 추천할 수 있습니다.",
+    "free": "무료",
+    "paid": "유료/부분유료",
+    "compare": "비교하기",
+    "compareCount": "{{count}}개 선택됨",
+    "reset": "초기화",
+    "compareTitle": "AI 도구 비교",
+    "compareCategory": "카테고리",
+    "comparePricing": "가격 모델",
+    "compareDescription": "기능 설명",
+    "compareUpvotes": "추천 수",
+    "compareLink": "링크",
+    "close": "비교창 닫기"
+  },
+  "review": {
+    "title": "{{name}} 리뷰",
+    "empty": "아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨주세요!",
+    "anonymous": "익명",
+    "delete": "리뷰 삭제",
+    "deleteConfirm": "이 리뷰를 삭제하시겠습니까?",
+    "rating": "별점:",
+    "placeholder": "{{name}}님, 이 도구에 대한 리뷰를 남겨주세요.",
+    "submit": "등록하기",
+    "submitting": "등록 중..."
   },
   "footer": {
     "desc": "목적에 딱 맞는 AI 도구를 가장 빠르고 정확하게 찾아주는 대화형 큐레이션 서비스입니다.",
@@ -28,6 +105,10 @@
     "terms": "이용약관",
     "privacy": "개인정보처리방침",
     "contact": "문의사항",
+    "about": "서비스 소개",
+    "chat": "AI 추천 채팅",
+    "submit": "AI 도구 등록",
+    "feedback": "건의 및 피드백",
     "email": "이메일 알림",
     "allRightsReserved": "© 2024 LoominAI. All rights reserved."
   }

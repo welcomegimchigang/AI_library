@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Star, MessageSquare, Trash2, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserSession } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
 
 interface Review {
   id: number;
@@ -27,6 +28,7 @@ export function ReviewModal({
   toolId,
   toolName,
 }: ReviewModalProps) {
+  const { t } = useTranslation();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(5);
@@ -83,7 +85,7 @@ export function ReviewModal({
       const review = {
         id: Date.now(),
         tool_id: toolId,
-        user_name: isAnonymous ? "익명" : currentUser.name,
+        user_name: isAnonymous ? t("review.anonymous") : currentUser.name,
         user_picture: isAnonymous ? "" : currentUser.picture,
         rating: newRating,
         content: newReview,
@@ -102,7 +104,7 @@ export function ReviewModal({
   };
 
   const handleDelete = async (reviewId: number) => {
-    if (!confirm("이 리뷰를 삭제하시겠습니까?")) return;
+    if (!confirm(t("review.deleteConfirm") || "이 리뷰를 삭제하시겠습니까?")) return;
     const userEmail = currentUser?.email || currentUser?.sub || "";
 
     try {
@@ -122,7 +124,7 @@ export function ReviewModal({
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
           <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <MessageSquare size={20} className="text-blue-500" />
-            {toolName} 리뷰
+            {t("review.title", { name: toolName })}
           </h3>
           <button
             onClick={onClose}
@@ -135,7 +137,7 @@ export function ReviewModal({
         <div className="p-6 overflow-y-auto flex-1 bg-slate-50 dark:bg-slate-950">
           {reviews.length === 0 ? (
             <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-              아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨주세요!
+              {t("review.empty")}
             </div>
           ) : (
             <div className="space-y-4">
@@ -175,7 +177,7 @@ export function ReviewModal({
                           <button
                             onClick={() => handleDelete(r.id)}
                             className="text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition-colors"
-                            title="리뷰 삭제"
+                            title={t("review.delete")}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -209,7 +211,7 @@ export function ReviewModal({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  별점:
+                  {t("review.rating")}
                 </span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -238,14 +240,14 @@ export function ReviewModal({
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <EyeOff size={12} /> 익명
+                  <EyeOff size={12} /> {t("review.anonymous")}
                 </span>
               </label>
             </div>
             <textarea
               value={newReview}
               onChange={(e) => setNewReview(e.target.value)}
-              placeholder={`${isAnonymous ? "익명" : currentUser?.name || "사용자"}님, 이 도구에 대한 리뷰를 남겨주세요.`}
+              placeholder={t("review.placeholder", { name: isAnonymous ? t("review.anonymous") : currentUser?.name || "User" })}
               className="w-full p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
               rows={3}
               required
@@ -256,7 +258,7 @@ export function ReviewModal({
                 disabled={loading}
                 className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
               >
-                {loading ? "등록 중..." : "등록하기"}
+                {loading ? t("review.submitting") : t("review.submit")}
               </Button>
             </div>
           </form>

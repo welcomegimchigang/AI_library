@@ -66,8 +66,8 @@ export function Header() {
             className="text-slate-500 hover:text-slate-900 px-2"
             title={
               i18n.language.startsWith("ko")
-                ? "Switch to English"
-                : "한국어로 전환"
+                ? t("nav.switchToEnglish")
+                : t("nav.switchToKorean")
             }
           >
             <Globe size={16} className="mr-1" />

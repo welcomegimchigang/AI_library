@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getUserSession } from "@/lib/auth";
@@ -73,14 +74,8 @@ function ToolLogo({ url, name }: { url: string; name: string }) {
   );
 }
 
-function formatNumber(num: number | undefined) {
-  if (!num) return "0";
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
-  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
-  return num.toLocaleString();
-}
-
 export function ToolLibrary() {
+  const { t } = useTranslation();
   const {
     tools,
     loading: toolsLoading,
@@ -89,7 +84,7 @@ export function ToolLibrary() {
     clearCompare,
   } = useTools();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("전체");
+  const [activeCategory, setActiveCategory] = useState(t("library.categories.all") || "전체");
   const [upvotes, setUpvotes] = useState<{ [key: number]: number }>({});
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -154,7 +149,7 @@ export function ToolLibrary() {
       });
       const data = await res.json();
       if (data.already) {
-        alert("해당 AI 툴은 하루에 한 번만 추천할 수 있습니다.");
+        alert(t("library.alreadyUpvoted") || "해당 AI 툴은 하루에 한 번만 추천할 수 있습니다.");
         return;
       }
       if (data.success) {
@@ -169,17 +164,17 @@ export function ToolLibrary() {
   };
 
   const categories = [
-    "전체",
-    "이미지/아트",
-    "텍스트/문서",
-    "개발/코드",
-    "비디오/오디오",
-    "교육/학습",
-    "건강/피트니스",
-    "비즈니스/마케팅",
-    "생산성/협업",
-    "금융/투자",
-    "기타",
+    t("library.categories.all") || "전체",
+    t("library.categories.image") || "이미지/아트",
+    t("library.categories.text") || "텍스트/문서",
+    t("library.categories.dev") || "개발/코드",
+    t("library.categories.video") || "비디오/오디오",
+    t("library.categories.edu") || "교육/학습",
+    t("library.categories.health") || "건강/피트니스",
+    t("library.categories.biz") || "비즈니스/마케팅",
+    t("library.categories.prod") || "생산성/협업",
+    t("library.categories.finance") || "금융/투자",
+    t("library.categories.other") || "기타",
   ];
 
   const filteredTools = useMemo(() => {
@@ -188,7 +183,7 @@ export function ToolLibrary() {
         tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tool.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory =
-        activeCategory === "전체" || tool.category === activeCategory;
+        activeCategory === (t("library.categories.all") || "전체") || tool.category === activeCategory;
       return matchesSearch && matchesCategory;
     }).sort((a, b) => (b.monthly_visits || 0) - (a.monthly_visits || 0));
   }, [tools, searchQuery, activeCategory]);
@@ -278,11 +273,11 @@ export function ToolLibrary() {
     <div className="w-full max-w-6xl mx-auto py-12 px-4 transition-colors duration-300">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-          AI 툴 탐색기
+          {t("library.title")}
         </h2>
         <div className="flex items-center gap-4">
           <span className="text-sm text-slate-500 dark:text-slate-400">
-            총 {filteredTools.length}개
+            {t("library.total", { count: filteredTools.length })}
           </span>
           <Button
             variant="outline"
@@ -298,7 +293,7 @@ export function ToolLibrary() {
       {trendingTools.length > 0 && (
         <div className="mb-12">
           <h3 className="text-xl font-bold mb-4 flex items-center text-slate-800 dark:text-slate-100">
-            <span className="text-2xl mr-2">🔥</span> 이번 주 핫한 AI 툴 TOP 5
+            <span className="text-2xl mr-2">🔥</span> {t("library.trending")}
           </h3>
           <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar">
             {trendingTools.map((tool, idx) => (
@@ -330,10 +325,7 @@ export function ToolLibrary() {
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex flex-col items-end">
                     <div className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                      추천 {upvotes[tool.id] || 0}
-                    </div>
-                    <div className="text-[10px] text-slate-400">
-                      월 {formatNumber(tool.monthly_visits)}명 방문
+                      {t("library.upvote")} {upvotes[tool.id] || 0}
                     </div>
                   </div>
                   <a href={tool.url} target="_blank" rel="noreferrer">
@@ -360,7 +352,7 @@ export function ToolLibrary() {
             size={22}
           />
           <Input
-            placeholder="원하는 AI 툴을 검색해 보세요 (예: 미드저니, 챗봇, 이미지 생성...)"
+            placeholder={t("chat.inputPlaceholder") || "원하는 AI 툴을 검색해 보세요..."}
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setSearchQuery(e.target.value)
@@ -395,7 +387,7 @@ export function ToolLibrary() {
         </div>
       ) : filteredTools.length === 0 ? (
         <div className="text-center py-20 text-slate-500 dark:text-slate-400">
-          <p className="text-lg">해당하는 툴이 없습니다.</p>
+          <p className="text-lg">{t("library.noTools")}</p>
         </div>
       ) : (
         <>
@@ -414,7 +406,7 @@ export function ToolLibrary() {
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm backdrop-blur-md ${tool.isFree ? "bg-emerald-500/90" : "bg-rose-500/90"}`}
                     >
-                      {tool.isFree ? "무료" : "유료"}
+                      {tool.isFree ? t("library.free") : t("library.paid")}
                     </span>
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-700 bg-white/90 shadow-sm backdrop-blur-md dark:text-slate-800">
                       {tool.category}
@@ -426,7 +418,7 @@ export function ToolLibrary() {
                         toggleCompare(tool.id);
                       }}
                       className={`p-1.5 rounded-full shadow-sm backdrop-blur-md transition-all ${compareIds.includes(tool.id) ? "bg-blue-600 text-white scale-110" : "bg-white/90 text-slate-600 hover:bg-blue-50"}`}
-                      title="비교하기 추가"
+                      title={t("library.addToCompare")}
                     >
                       <ArrowLeftRight size={14} />
                     </button>
@@ -450,14 +442,9 @@ export function ToolLibrary() {
                       className="text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
                     >
                       <ThumbsUp size={16} className="mr-2" />
-                      추천 {upvotes[tool.id] || 0}
+                      {t("library.upvote")} {upvotes[tool.id] || 0}
                     </Button>
-                    <div className="flex flex-col items-center">
-                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                        {formatNumber(tool.monthly_visits)}
-                      </span>
-                      <span className="text-[9px] text-slate-400 uppercase tracking-tighter">Visitors</span>
-                    </div>
+                    <div className="flex-1" />
                     <Button
                       variant="ghost"
                       size="sm"
@@ -480,7 +467,7 @@ export function ToolLibrary() {
                         size="sm"
                         className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500"
                       >
-                        방문하기
+                        {t("library.visit")}
                         <ExternalLink size={14} className="ml-2" />
                       </Button>
                     </a>
@@ -496,212 +483,216 @@ export function ToolLibrary() {
       {renderPagination("mt-12 mb-20")}
 
       {/* Floating Compare Bar */}
-      {compareIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-blue-200 dark:border-slate-700 p-4 animate-in slide-in-from-bottom-10 duration-300">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                {compareIds.length}개 선택됨
-              </span>
-              <div className="flex gap-2">
-                {compareIds.map((id) => {
-                  const t = tools.find((tool) => tool.id === id);
-                  let host = "";
-                  try {
-                    if (t) host = new URL(t.url).hostname;
-                  } catch { }
-                  return (
-                    <div
-                      key={id}
-                      className="relative w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center p-1 group"
-                    >
-                      {host && (
-                        <img
-                          src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`}
-                          alt=""
-                          className="w-full h-full object-contain"
-                        />
-                      )}
-                      <button
-                        onClick={() => toggleCompare(id)}
-                        className="absolute -top-1.5 -right-1.5 bg-slate-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+      {
+        compareIds.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-blue-200 dark:border-slate-700 p-4 animate-in slide-in-from-bottom-10 duration-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  {t("library.compareCount", { count: compareIds.length })}
+                </span>
+                <div className="flex gap-2">
+                  {compareIds.map((id) => {
+                    const t = tools.find((tool) => tool.id === id);
+                    let host = "";
+                    try {
+                      if (t) host = new URL(t.url).hostname;
+                    } catch { }
+                    return (
+                      <div
+                        key={id}
+                        className="relative w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center p-1 group"
                       >
-                        <X size={8} />
-                      </button>
-                    </div>
-                  );
-                })}
+                        {host && (
+                          <img
+                            src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`}
+                            alt=""
+                            className="w-full h-full object-contain"
+                          />
+                        )}
+                        <button
+                          onClick={() => toggleCompare(id)}
+                          className="absolute -top-1.5 -right-1.5 bg-slate-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X size={8} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearCompare}
+                  className="text-slate-500 text-xs h-8"
+                >
+                  {t("library.reset")}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setShowCompareModal(true)}
+                  disabled={compareIds.length < 2}
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 h-8 font-bold shadow-md shadow-blue-200"
+                >
+                  {t("library.compare")}
+                </Button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearCompare}
-                className="text-slate-500 text-xs h-8"
-              >
-                초기화
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setShowCompareModal(true)}
-                disabled={compareIds.length < 2}
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 h-8 font-bold shadow-md shadow-blue-200"
-              >
-                비교하기
-              </Button>
-            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Compare Modal */}
-      {showCompareModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-              <h3 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-                <ArrowLeftRight className="text-blue-600" /> AI 도구 비교
-              </h3>
-              <button
-                onClick={() => setShowCompareModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-6 overflow-x-auto overflow-y-auto flex-1">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="p-4 text-left border-b border-slate-100 dark:border-slate-800 w-32 text-slate-500 text-sm">
-                      항목
-                    </th>
-                    {compareIds.map((id) => {
-                      const t = tools.find((tool) => tool.id === id);
-                      let host = "";
-                      try {
-                        if (t) host = new URL(t.url).hostname;
-                      } catch { }
-                      return (
-                        <th
-                          key={id}
-                          className="p-4 border-b border-slate-100 dark:border-slate-800 min-w-[200px]"
-                        >
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 p-2 flex items-center justify-center">
-                              {host && (
-                                <img
-                                  src={`https://www.google.com/s2/favicons?domain=${host}&sz=64`}
-                                  alt=""
-                                  className="w-full h-full object-contain"
-                                />
-                              )}
-                            </div>
-                            <span className="font-bold text-slate-900 dark:text-white text-base">
-                              {t?.name}
-                            </span>
-                          </div>
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="bg-slate-50/30 dark:bg-slate-800/20">
-                    <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                      카테고리
-                    </td>
-                    {compareIds.map((id) => (
-                      <td
-                        key={id}
-                        className="p-4 text-center border-b border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300"
-                      >
-                        {tools.find((t) => t.id === id)?.category}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                      가격 모델
-                    </td>
-                    {compareIds.map((id) => (
-                      <td
-                        key={id}
-                        className="p-4 text-center border-b border-slate-100 dark:border-slate-800"
-                      >
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-bold ${tools.find((t) => t.id === id)?.isFree ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
-                        >
-                          {tools.find((t) => t.id === id)?.isFree
-                            ? "무료"
-                            : "유료"}
-                        </span>
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className="bg-slate-50/30 dark:bg-slate-800/20">
-                    <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                      기능 설명
-                    </td>
-                    {compareIds.map((id) => (
-                      <td
-                        key={id}
-                        className="p-4 text-sm text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 align-top line-clamp-4"
-                      >
-                        {tools.find((t) => t.id === id)?.description}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr>
-                    <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-                      추천 수
-                    </td>
-                    {compareIds.map((id) => (
-                      <td
-                        key={id}
-                        className="p-4 text-center border-b border-slate-100 dark:border-slate-800 font-black text-blue-600 dark:text-blue-400 text-lg"
-                      >
-                        {upvotes[id] || 0}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className="bg-slate-100/50 dark:bg-slate-800/50">
-                    <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider">
-                      링크
-                    </td>
-                    {compareIds.map((id) => (
-                      <td key={id} className="p-4 text-center">
-                        <a
-                          href={tools.find((t) => t.id === id)?.url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="w-full bg-slate-900 text-white dark:bg-blue-600"
+      {
+        showCompareModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                <h3 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                  <ArrowLeftRight className="text-blue-600" /> {t("library.compareTitle")}
+                </h3>
+                <button
+                  onClick={() => setShowCompareModal(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-6 overflow-x-auto overflow-y-auto flex-1">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="p-4 text-left border-b border-slate-100 dark:border-slate-800 w-32 text-slate-500 text-sm">
+                        {t("library.compareCategory")}
+                      </th>
+                      {compareIds.map((id) => {
+                        const t = tools.find((tool) => tool.id === id);
+                        let host = "";
+                        try {
+                          if (t) host = new URL(t.url).hostname;
+                        } catch { }
+                        return (
+                          <th
+                            key={id}
+                            className="p-4 border-b border-slate-100 dark:border-slate-800 min-w-[200px]"
                           >
-                            방문하기
-                          </Button>
-                        </a>
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 p-2 flex items-center justify-center">
+                                {host && (
+                                  <img
+                                    src={`https://www.google.com/s2/favicons?domain=${host}&sz=64`}
+                                    alt=""
+                                    className="w-full h-full object-contain"
+                                  />
+                                )}
+                              </div>
+                              <span className="font-bold text-slate-900 dark:text-white text-base">
+                                {t?.name}
+                              </span>
+                            </div>
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-slate-50/30 dark:bg-slate-800/20">
+                      <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                        {t("library.compareCategory")}
                       </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex justify-center">
-              <Button
-                onClick={() => setShowCompareModal(false)}
-                className="bg-slate-900 text-white dark:bg-slate-800 rounded-full px-10 h-10 font-bold"
-              >
-                비교창 닫기
-              </Button>
+                      {compareIds.map((id) => (
+                        <td
+                          key={id}
+                          className="p-4 text-center border-b border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+                        >
+                          {tools.find((t) => t.id === id)?.category}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                        {t("library.comparePricing")}
+                      </td>
+                      {compareIds.map((id) => (
+                        <td
+                          key={id}
+                          className="p-4 text-center border-b border-slate-100 dark:border-slate-800"
+                        >
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-xs font-bold ${tools.find((t) => t.id === id)?.isFree ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+                          >
+                            {tools.find((t) => t.id === id)?.isFree
+                              ? t("library.free")
+                              : t("library.paid")}
+                          </span>
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="bg-slate-50/30 dark:bg-slate-800/20">
+                      <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                        {t("library.compareDescription")}
+                      </td>
+                      {compareIds.map((id) => (
+                        <td
+                          key={id}
+                          className="p-4 text-sm text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 align-top line-clamp-4"
+                        >
+                          {tools.find((t) => t.id === id)?.description}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                        {t("library.compareUpvotes")}
+                      </td>
+                      {compareIds.map((id) => (
+                        <td
+                          key={id}
+                          className="p-4 text-center border-b border-slate-100 dark:border-slate-800 font-black text-blue-600 dark:text-blue-400 text-lg"
+                        >
+                          {upvotes[id] || 0}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="bg-slate-100/50 dark:bg-slate-800/50">
+                      <td className="p-4 font-bold text-slate-500 text-xs uppercase tracking-wider">
+                        {t("library.compareLink")}
+                      </td>
+                      {compareIds.map((id) => (
+                        <td key={id} className="p-4 text-center">
+                          <a
+                            href={tools.find((t) => t.id === id)?.url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="w-full bg-slate-900 text-white dark:bg-blue-600"
+                            >
+                              {t("library.visit")}
+                            </Button>
+                          </a>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex justify-center">
+                <Button
+                  onClick={() => setShowCompareModal(false)}
+                  className="bg-slate-900 text-white dark:bg-slate-800 rounded-full px-10 h-10 font-bold"
+                >
+                  {t("library.close")}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Review Modal */}
       <ReviewModal
@@ -710,6 +701,6 @@ export function ToolLibrary() {
         toolId={selectedTool?.id || 0}
         toolName={selectedTool?.name || ""}
       />
-    </div>
+    </div >
   );
 }

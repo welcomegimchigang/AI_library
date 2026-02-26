@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { User, Briefcase, Calendar, CheckCircle2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface PersonaData {
     gender: string;
@@ -14,6 +15,7 @@ interface PersonaModalProps {
 }
 
 export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
+    const { t } = useTranslation();
     const [step, setStep] = useState(1);
     const [data, setData] = useState<PersonaData>({
         gender: initialData?.gender || "",
@@ -22,7 +24,14 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
     });
 
     const jobs = [
-        "학생", "취준생", "직장인", "전문직", "자영업/사업가", "프리랜서", "주부", "기타"
+        t("persona.job.student") || "학생",
+        t("persona.job.jobseeker") || "취준생",
+        t("persona.job.officeWorker") || "직장인",
+        t("persona.job.professional") || "전문직",
+        t("persona.job.entrepreneur") || "자영업/사업가",
+        t("persona.job.freelancer") || "프리랜서",
+        t("persona.job.homemaker") || "주부",
+        t("persona.job.other") || "기타"
     ];
 
     const years = Array.from({ length: 66 }, (_, i) => 2015 - i); // 2015 ~ 1950
@@ -48,27 +57,30 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                             <span className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600">
                                 {step === 1 ? <User size={18} /> : step === 2 ? <Calendar size={18} /> : <Briefcase size={18} />}
                             </span>
-                            나만의 추천 프로필 설정
+                            {t("persona.title")}
                         </h2>
-                        <div className="text-xs font-bold text-slate-400">Step {step} / 3</div>
+                        <div className="text-xs font-bold text-slate-400">{t("persona.step")} {step} / 3</div>
                     </div>
 
                     <div className="space-y-6 min-h-[240px]">
                         {step === 1 && (
                             <div className="animate-in slide-in-from-right-4 duration-300">
-                                <p className="text-sm text-slate-500 mb-4 font-medium">성별을 선택해주세요.</p>
+                                <p className="text-sm text-slate-500 mb-4 font-medium">{t("persona.gender.label")}</p>
                                 <div className="grid grid-cols-2 gap-3">
-                                    {["남성", "여성"].map((g) => (
+                                    {[
+                                        { id: "남성", label: t("persona.gender.male") },
+                                        { id: "여성", label: t("persona.gender.female") }
+                                    ].map((g) => (
                                         <button
-                                            key={g}
-                                            onClick={() => setData({ ...data, gender: g })}
-                                            className={`h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold ${data.gender === g
+                                            key={g.id}
+                                            onClick={() => setData({ ...data, gender: g.id })}
+                                            className={`h-24 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold ${data.gender === g.id
                                                 ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-md"
                                                 : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 hover:border-slate-200 dark:hover:border-slate-700"
                                                 }`}
                                         >
-                                            <User size={24} className={data.gender === g ? "text-blue-500" : "text-slate-300 dark:text-slate-600"} />
-                                            {g}
+                                            <User size={24} className={data.gender === g.id ? "text-blue-500" : "text-slate-300 dark:text-slate-600"} />
+                                            {g.label}
                                         </button>
                                     ))}
                                 </div>
@@ -77,7 +89,7 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
 
                         {step === 2 && (
                             <div className="animate-in slide-in-from-right-4 duration-300">
-                                <p className="text-sm text-slate-500 mb-4 font-medium">태어난 연도를 알려주세요.</p>
+                                <p className="text-sm text-slate-500 mb-4 font-medium">{t("persona.birthYear.label")}</p>
                                 <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <select
                                         value={data.birthYear}
@@ -86,7 +98,7 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                                     >
                                         {years.map(y => (
                                             <option key={y} value={y} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold">
-                                                {y}년생 ({(new Date().getFullYear() - y) + 1}세)
+                                                {y}{t("persona.birthYear.suffix")} ({(new Date().getFullYear() - y) + 1}세)
                                             </option>
                                         ))}
                                     </select>
@@ -96,7 +108,7 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
 
                         {step === 3 && (
                             <div className="animate-in slide-in-from-right-4 duration-300">
-                                <p className="text-sm text-slate-500 mb-4 font-medium">현재 하고 계신 일은 무엇인가요?</p>
+                                <p className="text-sm text-slate-500 mb-4 font-medium">{t("persona.job.label")}</p>
                                 <div className="grid grid-cols-2 gap-2 mb-4">
                                     {jobs.map((j) => (
                                         <button
@@ -111,13 +123,13 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                                         </button>
                                     ))}
                                 </div>
-                                {(!jobs.filter(j => j !== "기타").includes(data.job)) && (
+                                {(!jobs.filter(j => j !== t("persona.job.other")).includes(data.job)) && (
                                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                                         <input
                                             type="text"
-                                            placeholder="직업을 직접 입력해주세요"
-                                            value={data.job === "기타" ? "" : data.job}
-                                            onFocus={(e) => { if (data.job === "기타") e.target.value = ""; }}
+                                            placeholder={t("persona.job.placeholder")}
+                                            value={(data.job === t("persona.job.other") || data.job === "기타") ? "" : data.job}
+                                            onFocus={(e) => { if (data.job === "기타" || data.job === t("persona.job.other")) e.target.value = ""; }}
                                             onChange={(e) => setData({ ...data, job: e.target.value })}
                                             className="w-full px-4 py-3 rounded-xl border border-blue-200 bg-blue-50/30 text-slate-900 dark:text-white dark:bg-slate-900/50 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                             autoFocus
@@ -135,7 +147,7 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                                 onClick={() => setStep(step - 1)}
                                 className="flex-1 h-12 rounded-xl text-slate-500 font-bold"
                             >
-                                이전
+                                {t("persona.back")}
                             </Button>
                         )}
                         <Button
@@ -146,7 +158,7 @@ export function PersonaModal({ onSave, initialData }: PersonaModalProps) {
                                 : "bg-slate-200 text-slate-400"
                                 }`}
                         >
-                            {step === 3 ? "시작하기" : "다음 단계"}
+                            {step === 3 ? t("persona.start") : t("persona.next")}
                             {step === 3 && <CheckCircle2 size={16} className="ml-2" />}
                         </Button>
                     </div>

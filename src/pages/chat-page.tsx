@@ -39,6 +39,7 @@ interface ChatTool {
 }
 
 function ChatToolCard({ tool }: { tool: ChatTool }) {
+  const { t } = useTranslation();
   let hostname = "";
   try {
     hostname = new URL(tool.url).hostname;
@@ -74,7 +75,7 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
           <span
             className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${tool.isFree ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400"}`}
           >
-            {tool.isFree ? "무료" : "유료/부분유료"}
+            {tool.isFree ? t("library.free") : t("library.paid")}
           </span>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
@@ -82,15 +83,8 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
         </p>
         <div className="mt-2 flex items-center justify-between">
           <div className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium group-hover:translate-x-0.5 transition-transform">
-            자세히 보기 <ExternalLink size={10} />
+            {t("library.visit")} <ExternalLink size={10} />
           </div>
-          {tool.monthly_visits ? (
-            <span className="text-[10px] font-medium text-slate-400">
-              월 {tool.monthly_visits >= 10000
-                ? `${(tool.monthly_visits / 10000).toFixed(1)}만`
-                : tool.monthly_visits.toLocaleString()}명 방문
-            </span>
-          ) : null}
         </div>
       </div>
     </Link>
@@ -158,9 +152,12 @@ export function ChatPage() {
             setPersona(p);
             localStorage.setItem("user_persona", JSON.stringify(p));
 
-            // DB에 데이터가 있더라도 30일이 지났다면 한번은 다시 갱신 요청
+            // DB에 데이터가 있더라도 30일이 지났거나 명시적으로 last_check 기준 체크
             if (isOverdue) {
               setShowPersonaModal(true);
+            } else {
+              // 30일 안 지났으면 last_check 갱신해서 연장
+              localStorage.setItem("persona_last_check", Date.now().toString());
             }
           } else {
             // 정보가 아예 없으면 무조건 노출
