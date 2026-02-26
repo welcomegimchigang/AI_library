@@ -12,9 +12,17 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { chatExamples } from "@/lib/mock-data";
+import { PersonaModal } from "@/components/persona-modal";
+import { getUserSession } from "@/lib/auth";
 
 type Msg = { id: string; role: "assistant" | "user" | "system"; text: string };
 type ChatState = "collecting" | "recommended" | "refining" | "";
+
+interface Persona {
+  gender: string;
+  birthYear: number;
+  job: string;
+}
 
 interface ChatTool {
   id: number | string;
@@ -96,8 +104,57 @@ export function ChatPage() {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [showAllTools, setShowAllTools] = useState(false);
   const [lastQuery, setLastQuery] = useState("");
+  const [persona, setPersona] = useState<Persona | null>(null);
+  const [showPersonaModal, setShowPersonaModal] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // 1. 인구통계 정보 확인
+    const session = getUserSession();
+    const localPersona = sessionStorage.getItem("user_persona");
+
+    if (localPersona) {
+      setPersona(JSON.parse(localPersona));
+    } else if (session) {
+      // 로그인 사용자: 서버에서 프로필 가져오기
+      fetch(`/api/user/profile?email=${encodeURIComponent(session.email)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.profile && data.profile.gender) {
+            const p = {
+              gender: data.profile.gender,
+              birthYear: data.profile.birth_year,
+              job: data.profile.job
+            };
+            setPersona(p);
+            sessionStorage.setItem("user_persona", JSON.stringify(p));
+          } else {
+            setShowPersonaModal(true);
+          }
+        })
+        .catch(() => setShowPersonaModal(true));
+    } else {
+      // 게스트: 모달 표시
+      setShowPersonaModal(true);
+    }
+  }, []);
+
+  const handleSavePersona = async (data: Persona) => {
+    setPersona(data);
+    sessionStorage.setItem("user_persona", JSON.stringify(data));
+    setShowPersonaModal(false);
+
+    const session = getUserSession();
+    if (session) {
+      // 로그인 사용자라면 DB에도 영구 저장
+      await fetch(`/api/user/profile?email=${encodeURIComponent(session.email)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -108,6 +165,12 @@ export function ChatPage() {
   const send = async (textToSubmit = input) => {
     const trimmed = textToSubmit.trim();
     if (!trimmed || isLoading) return;
+
+    // 만약 프로필이 없다면 모달을 다시 띄우고 중단
+    if (!persona) {
+      setShowPersonaModal(true);
+      return;
+    }
 
     const newMessage: Msg = {
       id: String(Date.now()),
@@ -133,6 +196,7 @@ export function ChatPage() {
           state: chatState,
           filters: filters,
           history: history,
+          persona: persona, // 인구통계 정보 포함
         }),
       });
 
@@ -141,7 +205,6 @@ export function ChatPage() {
       const data = await response.json();
 
       if (data.reply?.text) {
-        // 추천 결과가 있으면 추가 안내 메시지도 함께
         let replyText = data.reply.text;
         if (Array.isArray(data.tools) && data.tools.length > 0) {
           replyText +=
@@ -183,6 +246,8 @@ export function ChatPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(100%_100%_at_0%_0%,#dbeafe_0%,#e9d5ff_45%,#fce7f3_80%,#f8fafc_100%)]">
+      {showPersonaModal && <PersonaModal onSave={handleSavePersona} initialData={persona} />}
+
       <header className="sticky top-0 z-30 border-b border-white/30 bg-white/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6">
           <Link
@@ -194,7 +259,7 @@ export function ChatPage() {
           </Link>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/75 px-3 py-1 text-sm text-slate-700">
             <User size={14} />
-            Guest User
+            {persona ? `${(new Date().getFullYear() - persona.birthYear) + 1}세 ${persona.gender}` : "Guest User"}
           </div>
         </div>
       </header>
@@ -213,7 +278,7 @@ export function ChatPage() {
                     ? "bg-white text-slate-800 shadow-sm border border-slate-100"
                     : m.role === "system"
                       ? "mx-auto bg-red-50 text-red-600 border border-red-100 text-xs"
-                      : "ml-auto bg-[color:var(--primary)] text-white shadow-md"
+                      : "ml-auto bg-blue-600 text-white shadow-md"
                   }
                 `}
               >
@@ -221,7 +286,7 @@ export function ChatPage() {
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <Sparkles
                       size={12}
-                      className="text-[color:var(--accent)]"
+                      className="text-amber-400"
                     />
                     <span className="text-[10px] font-bold text-slate-500">
                       AI Assistant
@@ -249,7 +314,7 @@ export function ChatPage() {
                 <button
                   key={qr}
                   onClick={() => send(qr)}
-                  className="rounded-full border border-[color:var(--primary)]/30 bg-white/50 px-3 py-1.5 text-xs font-medium text-[color:var(--primary)] hover:bg-[color:var(--primary)] hover:text-white transition-colors"
+                  className="rounded-full border border-blue-600/30 bg-white/50 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
                 >
                   {qr}
                 </button>
@@ -264,7 +329,7 @@ export function ChatPage() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 disabled={isLoading}
-                className="h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]/50 focus:border-transparent transition-all"
+                className="h-12 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
                 placeholder={
                   t("chat.inputPlaceholder") || "어떤 툴을 찾으시나요?"
                 }
@@ -287,7 +352,7 @@ export function ChatPage() {
         <div className="space-y-4">
           <Card className="p-4 bg-white/80">
             <h3 className="mb-3 text-sm font-semibold text-slate-800 flex items-center gap-2">
-              <Sparkles size={14} className="text-[color:var(--accent)]" />
+              <Sparkles size={14} className="text-amber-400" />
               {recommendedTools.length > 0 ? "추천된 AI 툴" : "예시 질문"}
             </h3>
 
@@ -304,7 +369,7 @@ export function ChatPage() {
                 {chatExamples.map((example) => (
                   <button
                     key={example}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 transition hover:border-amber-400 hover:text-amber-600"
                     onClick={() => setInput(example)}
                   >
                     {example}

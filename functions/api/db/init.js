@@ -56,7 +56,30 @@ export async function onRequest(context) {
         gpt_intent TEXT NOT NULL,
         gpt_filters TEXT NOT NULL,
         matched_count INTEGER NOT NULL DEFAULT 0,
+        user_gender TEXT,
+        user_birth_year INTEGER,
+        user_job TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    // Migration for existing search_logs table
+    try {
+      await env.DB.prepare("ALTER TABLE search_logs ADD COLUMN user_gender TEXT").run();
+      await env.DB.prepare("ALTER TABLE search_logs ADD COLUMN user_birth_year INTEGER").run();
+      await env.DB.prepare("ALTER TABLE search_logs ADD COLUMN user_job TEXT").run();
+    } catch (e) {
+      // Columns might already exist
+    }
+
+    // 신규: 유저 프로필 테이블 (로그인 유저용)
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS user_profiles (
+        email TEXT PRIMARY KEY,
+        gender TEXT,
+        birth_year INTEGER,
+        job TEXT,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `).run();
 
@@ -64,6 +87,9 @@ export async function onRequest(context) {
     await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_upvotes_tool ON upvotes(tool_id)").run();
     await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks(user_email)").run();
     await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_search_logs_created ON search_logs(created_at)").run();
+    try {
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_search_logs_persona ON search_logs(user_gender, user_birth_year)").run();
+    } catch (e) { }
 
     return Response.json({ success: true, message: "All tables created, including search_logs" });
   } catch (e) {

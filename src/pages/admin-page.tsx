@@ -161,6 +161,69 @@ export function AdminPage() {
         </div>
       </div>
 
+      {/* Persona Demand Analysis (New) */}
+      <div className="mt-10 mb-10">
+        <h2 className="text-xl font-black text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <LineChart className="w-6 h-6 text-purple-600" />
+          페르소나별 수요 분석
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Gender Table */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 font-bold text-sm">
+              성별 인기 카테고리
+            </div>
+            <table className="w-full text-xs">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {metrics?.persona_metrics?.gender?.map((item: any, i: number) => (
+                  <tr key={i}>
+                    <td className="px-4 py-3 font-medium text-gray-500">{item.user_gender}</td>
+                    <td className="px-4 py-3 font-bold text-gray-900 dark:text-gray-100">{item.gpt_intent}</td>
+                    <td className="px-4 py-3 text-right text-purple-600 font-black">{item.count}회</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Age Table */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 font-bold text-sm">
+              연령대별 인기 카테고리
+            </div>
+            <table className="w-full text-xs">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {metrics?.persona_metrics?.age?.map((item: any, i: number) => (
+                  <tr key={i}>
+                    <td className="px-4 py-3 font-medium text-gray-500">{item.age_range}</td>
+                    <td className="px-4 py-3 font-bold text-gray-900 dark:text-gray-100">{item.gpt_intent}</td>
+                    <td className="px-4 py-3 text-right text-purple-600 font-black">{item.count}회</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Job Table */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="px-5 py-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 font-bold text-sm">
+              직업별 인기 카테고리
+            </div>
+            <table className="w-full text-xs">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {metrics?.persona_metrics?.job?.map((item: any, i: number) => (
+                  <tr key={i}>
+                    <td className="px-4 py-3 font-medium text-gray-500">{item.user_job}</td>
+                    <td className="px-4 py-3 font-bold text-gray-900 dark:text-gray-100">{item.gpt_intent}</td>
+                    <td className="px-4 py-3 text-right text-purple-600 font-black">{item.count}회</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* User Feedbacks (New) */}
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
