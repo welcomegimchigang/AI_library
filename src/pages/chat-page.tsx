@@ -44,8 +44,11 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
   } catch { }
 
   return (
-    <div className="flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-      <div className="w-10 h-10 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-center overflow-hidden flex-shrink-0">
+    <Link
+      to={`/tool/${tool.id}`}
+      className="flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-900/50 transition-all group"
+    >
+      <div className="w-10 h-10 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
         {hostname ? (
           <img
             src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`}
@@ -64,7 +67,7 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+          <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {tool.name}
           </h4>
           <span
@@ -76,16 +79,11 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
           {tool.why || tool.category}
         </p>
-        <a
-          href={tool.url}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-        >
-          방문하기 <ExternalLink size={10} />
-        </a>
+        <div className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium group-hover:translate-x-0.5 transition-transform">
+          자세히 보기 <ExternalLink size={10} />
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -129,25 +127,25 @@ export function ChatPage() {
 
   useEffect(() => {
     const session = getUserSession();
-    const localPersona = sessionStorage.getItem("user_persona");
+    const localPersona = localStorage.getItem("user_persona");
     const lastCheck = localStorage.getItem("persona_last_check");
     const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
 
-    const isExpired = lastCheck && (Date.now() - parseInt(lastCheck)) > ONE_MONTH;
+    const needsCheck = !lastCheck || (Date.now() - parseInt(lastCheck)) > ONE_MONTH;
 
     if (session) {
       setMaxUsage(30);
       fetch(`/api/user/profile?email=${encodeURIComponent(session.email)}`)
         .then(res => res.json())
         .then(data => {
-          if (data.success && data.profile && data.profile.gender && !isExpired) {
+          if (data.success && data.profile && data.profile.gender && !needsCheck) {
             const p = {
               gender: data.profile.gender,
               birthYear: data.profile.birth_year,
               job: data.profile.job
             };
             setPersona(p);
-            sessionStorage.setItem("user_persona", JSON.stringify(p));
+            localStorage.setItem("user_persona", JSON.stringify(p));
           } else {
             setShowPersonaModal(true);
           }
@@ -155,21 +153,20 @@ export function ChatPage() {
         .catch(() => setShowPersonaModal(true));
     } else {
       setMaxUsage(10);
-      if (localPersona && !isExpired) {
+      if (localPersona && !needsCheck) {
         setPersona(JSON.parse(localPersona));
       } else {
         setShowPersonaModal(true);
       }
     }
 
-    // 초기 사용량 로드 (임시로 로컬이나 세션 활용, 추후 서버 동기화 가능)
     const storedUsage = sessionStorage.getItem("chat_usage") || "0";
     setUsageCount(parseInt(storedUsage));
   }, []);
 
   const handleSavePersona = async (data: Persona) => {
     setPersona(data);
-    sessionStorage.setItem("user_persona", JSON.stringify(data));
+    localStorage.setItem("user_persona", JSON.stringify(data));
     localStorage.setItem("persona_last_check", Date.now().toString());
     setShowPersonaModal(false);
 
