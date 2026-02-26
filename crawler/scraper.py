@@ -64,13 +64,17 @@ def export_to_jsonl(tools, output_file):
     formatted_data = []
     for t in tools:
         translated_desc = translate_to_korean(t["desc"])
+        translated_name = translate_to_korean(t["name"]) # Translate name if it's purely English
+        
         formatted = {
             "id": random.randint(1500, 99999), 
-            "name": t["name"],
+            "name": f"{t['name']} ({translated_name})", # Keep both in main name field for now as per current convention
+            "name_en": t["name"],
             "description": translated_desc,
+            "description_en": t["desc"],
             "category": t["type"],
             "url": t["url"],
-            "isFree": False, # Basic assumption
+            "isFree": False,
             "thumbnail": f"https://logo.clearbit.com/{t['url'].replace('https://', '').replace('http://', '').split('/')[0]}"
         }
         formatted_data.append(formatted)

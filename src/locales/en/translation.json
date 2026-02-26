@@ -127,7 +127,20 @@
     "compareUpvotes": "Upvotes",
     "compareLink": "Link",
     "close": "Close",
-    "visits": "{{count}} monthly visits"
+    "visits": "{{count}} monthly visits",
+    "backToList": "Back to List",
+    "intro": "Introduction",
+    "features": "Key Features",
+    "alternatives": "Alternatives",
+    "visitOfficial": "Visit Official Site",
+    "bookmark": "Bookmark",
+    "bookmarked": "Saved",
+    "reviews": "Reviews",
+    "platform": "Platform",
+    "webBased": "Web-based",
+    "website": "Website",
+    "noTool": "Tool not found.",
+    "goHome": "Go back home"
   },
   "review": {
     "title": "{{name}} Reviews",

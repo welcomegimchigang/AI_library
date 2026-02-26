@@ -435,10 +435,10 @@ export function ToolLibrary() {
                     to={`/tool/${tool.id}`}
                     className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-1 hover:text-blue-600 transition-colors"
                   >
-                    {tool.name}
+                    {i18n.language === 'en' && tool.name_en ? tool.name_en : tool.name}
                   </Link>
                   <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4 flex-1">
-                    {tool.description}
+                    {i18n.language === 'en' && tool.description_en ? tool.description_en : tool.description}
                   </p>
                   <div className="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-700">
                     <Button
@@ -450,8 +450,8 @@ export function ToolLibrary() {
                       <ThumbsUp size={16} className="mr-2" />
                       {t("library.upvote")} {upvotes[tool.id] || 0}
                     </Button>
-                    <div className="flex-1 flex flex-col items-end">
-                      <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                    <div className="flex-1 flex justify-end items-center">
+                      <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
                         {t("library.visits", { count: formatNumber(tool.monthly_visits || 0) })}
                       </span>
                     </div>

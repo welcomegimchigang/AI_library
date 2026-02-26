@@ -9,7 +9,9 @@ import React, {
 export interface Tool {
   id: number;
   name: string;
+  name_en?: string;
   description: string;
+  description_en?: string;
   category: string;
   url: string;
   isFree: boolean;

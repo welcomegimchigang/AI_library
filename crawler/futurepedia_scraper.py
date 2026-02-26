@@ -252,10 +252,15 @@ def run():
             pass
         
         max_id += 1
+        # Translate name to Korean
+        name_ko = translate_safe(data["name"])
+        
         entry = {
             "id": max_id,
-            "name": data["name"],
+            "name": f"{data['name']} ({name_ko})",
+            "name_en": data["name"],
             "description": desc_ko,
+            "description_en": data["description"],
             "category": guess_category(slug, data["description"]),
             "url": ext_url,
             "isFree": data["is_free"],

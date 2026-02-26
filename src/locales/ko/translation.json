@@ -127,7 +127,20 @@
     "compareUpvotes": "추천 수",
     "compareLink": "링크",
     "close": "비교창 닫기",
-    "visits": "월 방문자 {{count}}"
+    "visits": "월 방문자 {{count}}",
+    "backToList": "도구 목록으로",
+    "intro": "소개",
+    "features": "주요 특징",
+    "alternatives": "대안 도구",
+    "visitOfficial": "공식 사이트 방문",
+    "bookmark": "북마크",
+    "bookmarked": "저장됨",
+    "reviews": "리뷰",
+    "platform": "플랫폼",
+    "webBased": "웹 기반",
+    "website": "웹사이트",
+    "noTool": "도구를 찾을 수 없습니다.",
+    "goHome": "홈으로 돌아가기"
   },
   "review": {
     "title": "{{name}} 리뷰",
