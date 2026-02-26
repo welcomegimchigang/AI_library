@@ -73,6 +73,13 @@ function ToolLogo({ url, name }: { url: string; name: string }) {
   );
 }
 
+function formatNumber(num: number | undefined) {
+  if (!num) return "0";
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+  return num.toLocaleString();
+}
+
 export function ToolLibrary() {
   const {
     tools,
@@ -183,7 +190,7 @@ export function ToolLibrary() {
       const matchesCategory =
         activeCategory === "전체" || tool.category === activeCategory;
       return matchesSearch && matchesCategory;
-    });
+    }).sort((a, b) => (b.monthly_visits || 0) - (a.monthly_visits || 0));
   }, [tools, searchQuery, activeCategory]);
 
   const totalPages = Math.ceil(filteredTools.length / itemsPerPage);
@@ -321,8 +328,13 @@ export function ToolLibrary() {
                   {tool.description}
                 </p>
                 <div className="mt-4 flex items-center justify-between">
-                  <div className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                    추천 {upvotes[tool.id] || 0}
+                  <div className="flex flex-col items-end">
+                    <div className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                      추천 {upvotes[tool.id] || 0}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      월 {formatNumber(tool.monthly_visits)}명 방문
+                    </div>
                   </div>
                   <a href={tool.url} target="_blank" rel="noreferrer">
                     <Button
@@ -440,6 +452,12 @@ export function ToolLibrary() {
                       <ThumbsUp size={16} className="mr-2" />
                       추천 {upvotes[tool.id] || 0}
                     </Button>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                        {formatNumber(tool.monthly_visits)}
+                      </span>
+                      <span className="text-[9px] text-slate-400 uppercase tracking-tighter">Visitors</span>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"

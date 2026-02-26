@@ -14,6 +14,7 @@ export interface Tool {
   url: string;
   isFree: boolean;
   thumbnail?: string;
+  monthly_visits?: number;
 }
 
 interface ToolContextType {

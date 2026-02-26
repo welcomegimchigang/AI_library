@@ -66,14 +66,14 @@ export function HomePage() {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(120%_80%_at_10%_0%,#dbeafe_0%,#e9d5ff_40%,#fce7f3_75%,#f8fafc_100%)] text-slate-900">
+    <div className="min-h-screen bg-[radial-gradient(120%_80%_at_10%_0%,#dbeafe_0%,#e9d5ff_40%,#fce7f3_75%,#f8fafc_100%)] dark:bg-slate-950 dark:bg-none text-slate-900 dark:text-slate-100 transition-colors duration-500">
       <Header />
 
       <main>
         {/* Hero */}
         <section className="mx-auto w-full max-w-6xl px-4 pb-20 pt-20 md:px-6">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 backdrop-blur">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/50 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 backdrop-blur">
               <Sparkles size={14} />
               {t("home.heroBadge")}
             </p>
@@ -84,7 +84,7 @@ export function HomePage() {
               <br />
               {t("home.heroTitle2")}
             </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-base text-slate-600 md:text-lg">
+            <p className="mx-auto mt-5 max-w-2xl text-base text-slate-600 dark:text-slate-400 md:text-lg">
               {t("home.heroDesc")}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -111,10 +111,10 @@ export function HomePage() {
           className="mx-auto w-full max-w-6xl px-4 pb-16 md:px-6"
         >
           <div className="text-center">
-            <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+            <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
               왜 LoominAI인가요?
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
               다른 AI 도구 사이트와 차별화되는 핵심 기능
             </p>
           </div>
@@ -122,13 +122,13 @@ export function HomePage() {
             {features.map((item) => (
               <div
                 key={item.title}
-                className="rounded-2xl border border-white/40 bg-white/75 p-6 shadow-sm backdrop-blur hover:shadow-md transition-shadow"
+                className="rounded-2xl border border-white/40 dark:border-slate-800 bg-white/75 dark:bg-slate-900/75 p-6 shadow-sm backdrop-blur hover:shadow-md transition-shadow"
               >
                 <div className="mb-3">{item.icon}</div>
-                <h3 className="text-lg font-bold text-slate-900">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                   {item.desc}
                 </p>
               </div>
@@ -157,15 +157,15 @@ export function HomePage() {
               {steps.map((step) => (
                 <div
                   key={step.num}
-                  className="relative rounded-2xl bg-white p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow"
+                  className="relative rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow"
                 >
-                  <div className="text-4xl font-black text-blue-100 mb-3">
+                  <div className="text-4xl font-black text-blue-100 dark:text-blue-900/30 mb-3">
                     {step.num}
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 -mt-2">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white -mt-2">
                     {step.title}
                   </h3>
-                  <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                     {step.desc}
                   </p>
                 </div>

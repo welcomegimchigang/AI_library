@@ -35,6 +35,7 @@ interface ChatTool {
   isFree?: boolean;
   why: string;
   thumbnail?: string;
+  monthly_visits?: number;
 }
 
 function ChatToolCard({ tool }: { tool: ChatTool }) {
@@ -79,8 +80,17 @@ function ChatToolCard({ tool }: { tool: ChatTool }) {
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
           {tool.why || tool.category}
         </p>
-        <div className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium group-hover:translate-x-0.5 transition-transform">
-          자세히 보기 <ExternalLink size={10} />
+        <div className="mt-2 flex items-center justify-between">
+          <div className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium group-hover:translate-x-0.5 transition-transform">
+            자세히 보기 <ExternalLink size={10} />
+          </div>
+          {tool.monthly_visits ? (
+            <span className="text-[10px] font-medium text-slate-400">
+              월 {tool.monthly_visits >= 10000
+                ? `${(tool.monthly_visits / 10000).toFixed(1)}만`
+                : tool.monthly_visits.toLocaleString()}명 방문
+            </span>
+          ) : null}
         </div>
       </div>
     </Link>
@@ -173,8 +183,18 @@ export function ChatPage() {
       }
     }
 
-    const storedUsage = sessionStorage.getItem("chat_usage") || "0";
-    setUsageCount(parseInt(storedUsage));
+    // 초기 사용량 로드 (localStorage 사용 및 날짜 기반 초기화)
+    const today = new Date().toLocaleDateString();
+    const storedUsage = localStorage.getItem("chat_usage") || "0";
+    const storedDate = localStorage.getItem("chat_usage_date");
+
+    if (storedDate !== today) {
+      setUsageCount(0);
+      localStorage.setItem("chat_usage", "0");
+      localStorage.setItem("chat_usage_date", today);
+    } else {
+      setUsageCount(parseInt(storedUsage));
+    }
   }, []);
 
   const handleSavePersona = async (data: Persona) => {
@@ -241,6 +261,10 @@ export function ChatPage() {
       if (!response.ok) throw new Error(`API error: ${response.status}`);
 
       const data = await response.json();
+      const newCount = usageCount + 1;
+      setUsageCount(newCount);
+      localStorage.setItem("chat_usage", String(newCount));
+      localStorage.setItem("chat_usage_date", new Date().toLocaleDateString());
 
       if (data.reply?.text) {
         let replyText = data.reply.text;
