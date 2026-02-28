@@ -180,7 +180,7 @@ export function AdminPage() {
                   <div key={i} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-slate-400 font-bold">{item.user_gender}</span>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.gpt_intent}</span>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.category}</span>
                     </div>
                     <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}회</span>
                   </div>
@@ -198,7 +198,7 @@ export function AdminPage() {
                   <div key={i} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-slate-400 font-bold">{item.age_range}</span>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.gpt_intent}</span>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.category}</span>
                     </div>
                     <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}회</span>
                   </div>
@@ -216,7 +216,7 @@ export function AdminPage() {
                   <div key={i} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-slate-400 font-bold">{item.user_job}</span>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.gpt_intent}</span>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.category}</span>
                     </div>
                     <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}회</span>
                   </div>
@@ -326,12 +326,12 @@ export function AdminPage() {
               </div>
             </div>
 
-            {/* Top Trending Intents */}
+            {/* Top Trending Intents -> Categories */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
               <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850">
                 <h2 className="text-md font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
                   <Search className="w-5 h-5 text-blue-500" />
-                  실시간 인기 분야 (최근 7일)
+                  실시간 인기 관심 분야 (최근 7일)
                 </h2>
               </div>
               <div>
@@ -339,7 +339,7 @@ export function AdminPage() {
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {metrics?.top_intents?.map((intent: any, idx: number) => (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="px-6 py-3.5 font-bold text-slate-700 dark:text-slate-300">{intent.gpt_intent}</td>
+                        <td className="px-6 py-3.5 font-bold text-slate-700 dark:text-slate-300">{intent.category}</td>
                         <td className="px-6 py-3.5 text-right font-black text-blue-600 dark:text-blue-400">{intent.count}회 검색</td>
                       </tr>
                     ))}

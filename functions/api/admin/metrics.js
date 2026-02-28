@@ -22,12 +22,15 @@ export async function onRequestGet(context) {
       LIMIT 100
     `).all();
 
-    // 2. Get top search intents (last 7 days)
+    // 2. Get top search intents (last 7 days) -> Now extracted as 'Category'
     const topIntentsResult = await env.DB.prepare(`
-      SELECT gpt_intent, COUNT(*) as count
+      SELECT 
+        COALESCE(json_extract(gpt_filters, '$.category'), '기타/미분류') as category, 
+        COUNT(*) as count
       FROM search_logs
       WHERE created_at > datetime('now', '-7 days')
-      GROUP BY gpt_intent
+        AND gpt_intent = 'search_tools'
+      GROUP BY category
       ORDER BY count DESC
       LIMIT 10
     `).all();
@@ -38,10 +41,12 @@ export async function onRequestGet(context) {
     try {
       // 3-1. Top categories by Gender
       const genderDemand = await env.DB.prepare(`
-            SELECT user_gender, gpt_intent, COUNT(*) as count
+            SELECT user_gender, 
+                   COALESCE(json_extract(gpt_filters, '$.category'), '기타/미분류') as category, 
+                   COUNT(*) as count
             FROM search_logs
-            WHERE user_gender IS NOT NULL
-            GROUP BY user_gender, gpt_intent
+            WHERE user_gender IS NOT NULL AND gpt_intent = 'search_tools'
+            GROUP BY user_gender, category
             ORDER BY count DESC
             LIMIT 20
           `).all();
@@ -59,10 +64,11 @@ export async function onRequestGet(context) {
                 WHEN (2026 - user_birth_year + 1) BETWEEN 40 AND 49 THEN '40대'
                 ELSE '50대 이상'
               END AS age_range,
-              gpt_intent, COUNT(*) as count
+              COALESCE(json_extract(gpt_filters, '$.category'), '기타/미분류') as category, 
+              COUNT(*) as count
             FROM search_logs
-            WHERE user_birth_year IS NOT NULL
-            GROUP BY age_range, gpt_intent
+            WHERE user_birth_year IS NOT NULL AND gpt_intent = 'search_tools'
+            GROUP BY age_range, category
             ORDER BY count DESC
             LIMIT 20
           `).all();
@@ -72,10 +78,12 @@ export async function onRequestGet(context) {
     try {
       // 3-3. Top categories by Job
       const jobDemand = await env.DB.prepare(`
-            SELECT user_job, gpt_intent, COUNT(*) as count
+            SELECT user_job, 
+                   COALESCE(json_extract(gpt_filters, '$.category'), '기타/미분류') as category, 
+                   COUNT(*) as count
             FROM search_logs
-            WHERE user_job IS NOT NULL
-            GROUP BY user_job, gpt_intent
+            WHERE user_job IS NOT NULL AND gpt_intent = 'search_tools'
+            GROUP BY user_job, category
             ORDER BY count DESC
             LIMIT 20
           `).all();
