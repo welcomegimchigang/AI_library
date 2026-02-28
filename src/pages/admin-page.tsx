@@ -227,6 +227,58 @@ export function AdminPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          {/* Top Clicked Tools */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm flex flex-col h-[600px]">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850">
+              <h2 className="text-md font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+                🔗 공식 사이트 방문 순위 (TOP)
+              </h2>
+              <p className="text-[10px] text-slate-400 mt-0.5">"공식 사이트 방문" 버튼을 실제로 클릭한 총 회수 기준</p>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {metrics?.top_clicks && metrics.top_clicks.length > 0 ? (
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0">
+                    <tr>
+                      <th className="text-left px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-wider">#</th>
+                      <th className="text-left px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-wider">툴 이름</th>
+                      <th className="text-left px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-wider">카테고리</th>
+                      <th className="text-right px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-wider">클릭수</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {metrics.top_clicks.map((item: any, i: number) => (
+                      <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="px-4 py-3 text-[11px] font-black text-slate-400">{i + 1}</td>
+                        <td className="px-4 py-3">
+                          <a
+                            href={item.tool_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm font-bold text-blue-600 hover:underline truncate block max-w-[160px]"
+                          >
+                            {item.tool_name}
+                          </a>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-500">{item.category || "-"}</td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-2 py-1 rounded">
+                            {item.click_count}회
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                  <p className="text-sm">아직 클릭 데이터가 없습니다.</p>
+                  <p className="text-[10px]">툴 상세 페이지에서 "공식 사이트 방문" 클릭시 수집됩니다.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Feedback Management */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm flex flex-col h-[600px]">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-850">

@@ -80,6 +80,20 @@ export async function onRequest(context) {
       )
     `).run();
 
+    // 신규: 툴 클릭 → 공식 사이트 방문 추적 테이블
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS tool_clicks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tool_id INTEGER NOT NULL,
+        tool_name TEXT NOT NULL,
+        tool_url TEXT NOT NULL DEFAULT '',
+        category TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `).run();
+
+    await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_tool_clicks_tool ON tool_clicks(tool_id)").run();
+
     await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_reviews_tool ON reviews(tool_id)").run();
     await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_upvotes_tool ON upvotes(tool_id)").run();
     await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks(user_email)").run();

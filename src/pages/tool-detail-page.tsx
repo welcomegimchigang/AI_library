@@ -118,6 +118,22 @@ export function ToolDetailPage() {
     if (tool) hostname = new URL(tool.url).hostname;
   } catch { }
 
+  // 사이트 방문 클릭 추적
+  const handleVisitClick = async () => {
+    if (!tool) return;
+    // 파이어 & 포갓 (시작 시 페이지는 이미 열림)
+    fetch("/api/db/clicks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tool_id: tool.id,
+        tool_name: tool.name,
+        tool_url: tool.url,
+        category: tool.category,
+      }),
+    }).catch(() => { }); // 실패해도 UX 에 영향 없음
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -233,7 +249,7 @@ export function ToolDetailPage() {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3 mt-8">
-              <a href={tool.url} target="_blank" rel="noreferrer">
+              <a href={tool.url} target="_blank" rel="noreferrer" onClick={handleVisitClick}>
                 <Button
                   size="lg"
                   className="bg-blue-600 hover:bg-blue-700 text-white"

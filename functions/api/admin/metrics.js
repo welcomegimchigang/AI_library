@@ -99,11 +99,25 @@ export async function onRequestGet(context) {
     const calcSuccess = calcTotal - calcMissed;
     const successRate = calcTotal > 0 ? ((calcSuccess / calcTotal) * 100).toFixed(1) : 0;
 
+    // 5. 툴 클릭 (공식 사이트 방문) 통계
+    let top_clicks = [];
+    try {
+      const clicksResult = await env.DB.prepare(`
+        SELECT tool_id, tool_name, tool_url, category, COUNT(*) as click_count
+        FROM tool_clicks
+        GROUP BY tool_id
+        ORDER BY click_count DESC
+        LIMIT 20
+      `).all();
+      top_clicks = clicksResult.results || [];
+    } catch (e) { console.error("top_clicks query failed (table may not exist yet - run /api/db/init):", e); }
+
     return Response.json({
       success: true,
       data: {
         missing_queries: missingQueriesResult.results || [],
         top_intents: topIntentsResult.results || [],
+        top_clicks: top_clicks,
         persona_metrics: persona_metrics,
         stats: {
           total_queries: calcTotal,
