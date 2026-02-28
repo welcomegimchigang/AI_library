@@ -28,12 +28,24 @@ export async function onRequestPost(context) {
   const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
   const body = await request.json().catch(() => ({}));
   const email = body?.userEmail || ""; // 프론트에서 보내줄 수 있음
+  const message = String(body?.message || "").trim();
 
   // Rate limiting (IP 또는 이메일 기반)
   const identifier = email ? `user_${email}` : `ip_${clientIP}`;
   const kstOffset = 9 * 60 * 60 * 1000;
   const dayBucket = Math.floor((Date.now() + kstOffset) / (86400 * 1000));
   const rateLimitKey = `usage_${identifier}_${dayBucket}`;
+
+  // [NEW] 토큰 리셋 슬래시 커맨드 (/adminsupernovatoken)
+  if (message === "/adminsupernovatoken") {
+    if (env.MISSING_TOOLS_KV) {
+      context.waitUntil(env.MISSING_TOOLS_KV.delete(rateLimitKey));
+    }
+    return Response.json({
+      reply: { text: "[관리자 모드] 뾰로롱✨\n사용자님의 일일 대화 토큰이 0으로 초기화되었습니다! 이제 다시 마음껏 질문하실 수 있습니다." },
+      state: "collecting", missing: [], quickReplies: [], filters: {}, tools: [],
+    });
+  }
 
   let currentUsage = 0;
   if (env.MISSING_TOOLS_KV) {
@@ -58,7 +70,6 @@ export async function onRequestPost(context) {
   }
 
   try {
-    const message = String(body?.message || "").trim();
     const prevFilters = body?.filters && typeof body.filters === "object" ? body.filters : {};
     const history = Array.isArray(body?.history) ? body.history : [];
 
