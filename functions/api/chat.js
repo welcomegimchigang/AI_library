@@ -62,6 +62,50 @@ export async function onRequestPost(context) {
     const prevFilters = body?.filters && typeof body.filters === "object" ? body.filters : {};
     const history = Array.isArray(body?.history) ? body.history : [];
 
+    // [NEW] 관리자 수동 툴 수집 슬래시 커맨드 (/adminsupernova)
+    if (message.startsWith("/adminsupernova")) {
+      const toolName = message.replace("/adminsupernova", "").trim();
+
+      if (!toolName) {
+        return Response.json({
+          reply: { text: "명령어 오류: 수집할 AI 툴 이름을 함께 입력해주세요. (예: /adminsupernova Vrew)" },
+          state: "collecting", missing: [], quickReplies: [], filters: prevFilters, tools: [],
+        });
+      }
+
+      // KV DB에 다이렉트 푸시 (pending 상태)
+      if (env.MISSING_TOOLS_KV) {
+        const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        context.waitUntil(
+          env.MISSING_TOOLS_KV.put(queryKey, JSON.stringify({
+            query: toolName,
+            intent: "manual_admin_insert",
+            filters: { q: toolName },
+            status: "pending",
+            timestamp: Date.now()
+          })).catch(console.error)
+        );
+      }
+
+      // 디스코드 알림
+      if (env.DISCORD_WEBHOOK_URL) {
+        context.waitUntil(
+          fetch(env.DISCORD_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `🛠️ **관리자 수동 툴 수집 요청 추가됨**\n- 툴 이름: \`${toolName}\`\n- 설명: \`/adminsupernova\` 커맨드에 의해 새벽 깃헙 액션 수집 봇 대기열에 다이렉트로 추가되었습니다.`
+            })
+          }).catch(undefined)
+        );
+      }
+
+      return Response.json({
+        reply: { text: `[관리자 모드] 성공✨\n'${toolName}' 도구를 스크래핑 대기열에 수동으로 추가했습니다. 새벽에 GitHub Actions 봇이 수집합니다.` },
+        state: "collecting", missing: [], quickReplies: [], filters: prevFilters, tools: [],
+      });
+    }
+
     // 1. AI에게 의도(Intent) 파악 및 필터 추출 요청
     const gpt = await generateChatLayerWithGpt(env, { message, history });
 
