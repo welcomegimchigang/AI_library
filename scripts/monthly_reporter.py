@@ -50,7 +50,7 @@ def main():
         WHERE session_id IS NOT NULL 
         GROUP BY session_id
     ) s ON c.session_id = s.session_id
-    WHERE c.created_at >= datetime('now', '-30 days')
+    WHERE strftime('%Y-%m', c.created_at) = strftime('%Y-%m', datetime('now', '-1 month'))
     """
     
     print("Fetching data from Cloudflare D1...")
