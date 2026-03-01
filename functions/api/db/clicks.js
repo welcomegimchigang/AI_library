@@ -14,14 +14,16 @@ export async function onRequestPost(context) {
         const tool_url = String(body?.tool_url || "").trim();
         const category = String(body?.category || "").trim();
 
+        const session_id = String(body?.session_id || "").trim();
+
         if (!tool_id || !tool_name) {
             return Response.json({ error: "tool_id and tool_name are required" }, { status: 400 });
         }
 
         await env.DB.prepare(`
-      INSERT INTO tool_clicks (tool_id, tool_name, tool_url, category)
-      VALUES (?, ?, ?, ?)
-    `).bind(tool_id, tool_name, tool_url, category).run();
+      INSERT INTO tool_clicks (tool_id, tool_name, tool_url, category, session_id)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(tool_id, tool_name, tool_url, category, session_id).run();
 
         return Response.json({ success: true });
     } catch (e) {

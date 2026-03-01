@@ -257,6 +257,7 @@ export function ChatPage() {
           history: history,
           persona: persona,
           userEmail: getUserSession()?.email, // 서버의 이메일 기반 한도 적용을 위해 추가
+          session_id: localStorage.getItem("loominai_session_id"), // 통계/조인용 세션 ID
         }),
       });
 

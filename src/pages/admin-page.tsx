@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { LineChart, Search, AlertCircle, Database, MessageSquare, Trash2, RefreshCw, ExternalLink, Moon, Sun } from "lucide-react";
+import { useTools } from "@/contexts/tool-context";
 
 export function AdminPage() {
   const [secret, setSecret] = useState(
@@ -10,6 +11,8 @@ export function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const { tools } = useTools();
+
   // --- Dynamic Filters State ---
   // 1. Persona Dimension Toggles
   const [activeDimensions, setActiveDimensions] = useState({
@@ -18,8 +21,32 @@ export function AdminPage() {
     job: false
   });
 
+  // 1.5. Persona Matcher Filters
+  const [filterGender, setFilterGender] = useState("");
+  const [filterAge, setFilterAge] = useState("");
+  const [filterJob, setFilterJob] = useState("");
+
   // 2. Top Clicks Category Filter
   const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [rankingMode, setRankingMode] = useState<"global" | "local">("global");
+
+  const displayedCategories = useMemo(() => {
+    let source = rankingMode === "global" ? tools : (metrics?.top_clicks || []);
+    return Array.from(new Set(source.map((item: any) => item.category || "기타")));
+  }, [rankingMode, tools, metrics]);
+
+  const rankingDataList = useMemo(() => {
+    let data = [];
+    if (rankingMode === "global") {
+      data = tools.map((t: any) => ({ name: t.name, url: t.url, category: t.category, count: t.monthly_visits || 0 })).sort((a: any, b: any) => b.count - a.count).slice(0, 50);
+    } else {
+      data = (metrics?.top_clicks || []).map((t: any) => ({ name: t.tool_name, url: t.tool_url, category: t.category, count: t.click_count }));
+    }
+    if (selectedCategory !== "전체") {
+      data = data.filter((item: any) => (item.category || "기타") === selectedCategory);
+    }
+    return data;
+  }, [rankingMode, tools, metrics, selectedCategory]);
 
   // --- Theme State (Admin) ---
   const [theme, setTheme] = useState(() => {
@@ -39,13 +66,18 @@ export function AdminPage() {
 
   const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
 
-  const fetchAllData = async (currentSecret: string) => {
+  const fetchAllData = async (currentSecret: string, gender = filterGender, age = filterAge, job = filterJob) => {
     if (!currentSecret) return;
     setLoading(true);
     setError("");
     try {
+      let metricsUrl = `/api/admin/metrics?secret=${currentSecret}`;
+      if (gender) metricsUrl += `&gender=${encodeURIComponent(gender)}`;
+      if (age) metricsUrl += `&age_group=${encodeURIComponent(age)}`;
+      if (job) metricsUrl += `&job=${encodeURIComponent(job)}`;
+
       // 1. Fetch Metrics (D1)
-      const resMetrics = await fetch(`/api/admin/metrics?secret=${currentSecret}`);
+      const resMetrics = await fetch(metricsUrl);
       if (!resMetrics.ok)
         throw new Error(
           resMetrics.status === 401 ? "비밀번호가 틀렸습니다." : "데이터 로드 실패",
@@ -71,9 +103,9 @@ export function AdminPage() {
 
   useEffect(() => {
     if (secret) {
-      fetchAllData(secret);
+      fetchAllData(secret, filterGender, filterAge, filterJob);
     }
-  }, []);
+  }, [filterGender, filterAge, filterJob]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,33 +336,92 @@ export function AdminPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {/* Top Clicked Tools (Enhanced) */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm flex flex-col md:col-span-2 xl:col-span-1">
+          {/* Top Clicked/Visited Tools (Enhanced) */}
+          <div id="ranking-table" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm flex flex-col md:col-span-2 xl:col-span-1">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-850">
-              <h2 className="text-md font-bold text-blue-900 dark:text-blue-100 flex items-center gap-3">
-                🔗 방문 순위 및 카테고리 필터링 (TOP 20)
-              </h2>
-              <p className="text-[10px] text-blue-600/70 dark:text-blue-400 mt-1 font-medium">유저가 "공식 사이트 방문" 버튼을 실제로 클릭한 횟수 기준</p>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-md font-bold text-blue-900 dark:text-blue-100 flex items-center gap-3">
+                    🔗 AI 툴 종합 방문 순위 (TOP 20)
+                  </h2>
+                  <p className="text-[10px] text-blue-600/70 dark:text-blue-400 mt-1 font-medium">카테고리별 사이트 수요 및 플랫폼 자체 클릭 분석</p>
+                </div>
+
+                <div className="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+                  <button
+                    onClick={() => setRankingMode("global")}
+                    className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all ${rankingMode === "global" ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                  >
+                    웹사이트 전체 방문자
+                  </button>
+                  <button
+                    onClick={() => setRankingMode("local")}
+                    className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all ${rankingMode === "local" ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                  >
+                    플랫폼 내 클릭
+                  </button>
+                </div>
+              </div>
+
+              {/* Persona Dynamic Filters */}
+              {rankingMode === "local" && (
+                <div className="mt-4 flex flex-wrap gap-2 items-center bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] font-bold text-slate-500 ml-1 mr-2">🎯 페르소나 클릭 매칭:</span>
+                  <select
+                    value={filterGender}
+                    onChange={(e) => setFilterGender(e.target.value)}
+                    className="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 dark:text-slate-300"
+                  >
+                    <option value="">성별 전체</option>
+                    <option value="남성">남성</option>
+                    <option value="여성">여성</option>
+                  </select>
+                  <select
+                    value={filterAge}
+                    onChange={(e) => setFilterAge(e.target.value)}
+                    className="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 dark:text-slate-300"
+                  >
+                    <option value="">연령 전체</option>
+                    <option value="10대 이하">10대 이하</option>
+                    <option value="20대">20대</option>
+                    <option value="30대">30대</option>
+                    <option value="40대">40대</option>
+                    <option value="50대 이상">50대 이상</option>
+                  </select>
+                  <select
+                    value={filterJob}
+                    onChange={(e) => setFilterJob(e.target.value)}
+                    className="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 dark:text-slate-300"
+                  >
+                    <option value="">직업 전체</option>
+                    <option value="학생/취준생">학생/취준생</option>
+                    <option value="개발자">개발자</option>
+                    <option value="사업가/창업가">사업가/창업가</option>
+                    <option value="마케터/콘텐츠">마케터/콘텐츠</option>
+                    <option value="일반 회사원">일반 회사원</option>
+                  </select>
+                </div>
+              )}
 
               {/* Category Filter Chips */}
-              {metrics?.top_clicks && metrics.top_clicks.length > 0 && (
+              {displayedCategories.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCategory("전체")}
                     className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all border ${selectedCategory === "전체"
-                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                        : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                      : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                       }`}
                   >
                     전체보기
                   </button>
-                  {Array.from(new Set(metrics.top_clicks.map((item: any) => item.category || "기타"))).map((cat: any) => (
+                  {displayedCategories.map((cat: any) => (
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
                       className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all border ${selectedCategory === cat
-                          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                          : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                         }`}
                     >
                       {cat}
@@ -341,50 +432,55 @@ export function AdminPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto max-h-[400px]">
-              {metrics?.top_clicks && metrics.top_clicks.length > 0 ? (
+              {rankingDataList.length > 0 ? (
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10 shadow-sm">
                     <tr>
                       <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-8">#</th>
                       <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider">툴 이름</th>
                       <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider">카테고리</th>
-                      <th className="text-right px-4 py-3 text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">클릭 수</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                        {rankingMode === "global" ? "월 방문자수" : "클릭 수"}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {metrics.top_clicks
-                      .filter((item: any) => selectedCategory === "전체" || (item.category || "기타") === selectedCategory)
-                      .map((item: any, i: number) => (
-                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 whitespace-nowrap text-xs font-bold text-slate-400">
-                            {i + 1}
-                          </td>
-                          <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">
-                            <div className="flex items-center gap-2">
-                              <span className="truncate max-w-[120px] sm:max-w-[200px] block" title={item.tool_name}>{item.tool_name}</span>
-                              <a href={item.tool_url} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 transition flex-shrink-0">
-                                <ExternalLink size={12} />
-                              </a>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full inline-block truncate max-w-[100px]">
-                              {item.category || "기타"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                              {item.click_count}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                    {rankingDataList
+                      .map((item: any, i: number) => {
+                        return (
+                          <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td className="px-4 py-3 whitespace-nowrap text-xs font-bold text-slate-400">
+                              {i + 1}
+                            </td>
+                            <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">
+                              <div className="flex items-center gap-2">
+                                <span className="truncate max-w-[120px] sm:max-w-[200px] block" title={item.name}>{item.name}</span>
+                                <a href={item.url} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 transition flex-shrink-0">
+                                  <ExternalLink size={12} />
+                                </a>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full inline-block truncate max-w-[100px]">
+                                {item.category || "기타"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                {rankingMode === "global"
+                                  ? (item.count >= 1000000 ? (item.count / 1000000).toFixed(1) + 'M' : item.count >= 1000 ? (item.count / 1000).toFixed(1) + 'K' : item.count)
+                                  : item.count}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 p-10">
-                  <p className="text-sm font-bold">아직 클릭 데이터가 없습니다.</p>
-                  <p className="text-[10px]">툴 상세 페이지에서 "공식 사이트 방문" 클릭 시 데이터가 수집됩니다.</p>
+                  <p className="text-sm font-bold">아직 조회할 데이터가 없습니다.</p>
+                  <p className="text-[10px]">클릭 또는 수집된 방문 지표가 모자랍니다.</p>
                 </div>
               )}
             </div>
@@ -501,7 +597,14 @@ export function AdminPage() {
                 <table className="w-full text-left text-sm">
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {metrics?.top_intents?.map((intent: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <tr
+                        key={idx}
+                        onClick={() => {
+                          setSelectedCategory(intent.category);
+                          document.getElementById("ranking-table")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                      >
                         <td className="px-6 py-3.5 font-bold text-slate-700 dark:text-slate-300">{intent.category}</td>
                         <td className="px-6 py-3.5 text-right font-black text-blue-600 dark:text-blue-400">{intent.count}회 검색</td>
                       </tr>

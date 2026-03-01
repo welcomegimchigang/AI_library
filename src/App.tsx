@@ -1,4 +1,5 @@
-﻿import { Route, Routes } from "react-router-dom";
+﻿import { useEffect } from "react";
+import { Route, Routes } from "react-router-dom";
 
 import { ChatPage } from "@/pages/chat-page";
 import { HomePage } from "@/pages/home-page";
@@ -13,6 +14,14 @@ import { SubmitToolPage } from "@/pages/submit-tool-page";
 import { FeedbackPage } from "@/pages/feedback-page";
 
 export default function App() {
+  useEffect(() => {
+    // Generate an anonymous session ID for analytics tracking if it doesn't exist
+    if (!localStorage.getItem("loominai_session_id")) {
+      const newSessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem("loominai_session_id", newSessionId);
+    }
+  }, []);
+
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />

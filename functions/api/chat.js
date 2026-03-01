@@ -150,8 +150,8 @@ export async function onRequestPost(context) {
     if (env.DB) {
       context.waitUntil(
         env.DB.prepare(`
-          INSERT INTO search_logs (user_query, gpt_intent, gpt_filters, matched_count, user_gender, user_birth_year, user_job)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO search_logs (user_query, gpt_intent, gpt_filters, matched_count, user_gender, user_birth_year, user_job, session_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `)
           .bind(
             message.slice(0, 500),
@@ -160,7 +160,8 @@ export async function onRequestPost(context) {
             matchedCount,
             persona.gender || null,
             persona.birthYear || null,
-            persona.job || null
+            persona.job || null,
+            body?.session_id || null
           )
           .run()
           .catch(e => console.error("Failed to log search query to D1:", e))

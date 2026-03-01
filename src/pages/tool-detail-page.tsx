@@ -130,6 +130,7 @@ export function ToolDetailPage() {
         tool_name: tool.name,
         tool_url: tool.url,
         category: tool.category,
+        session_id: localStorage.getItem("loominai_session_id"), // 트래킹용 세션 ID
       }),
     }).catch(() => { }); // 실패해도 UX 에 영향 없음
   };

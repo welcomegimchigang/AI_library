@@ -2,6 +2,9 @@ export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const secret = url.searchParams.get("secret");
+  const pGender = url.searchParams.get("gender");
+  const pAgeGroup = url.searchParams.get("age_group");
+  const pJob = url.searchParams.get("job");
 
   // Simple secret-based protection
   if (secret !== env.KV_API_SECRET) {
@@ -195,13 +198,42 @@ export async function onRequestGet(context) {
     // 5. 툴 클릭 (공식 사이트 방문) 통계
     let top_clicks = [];
     try {
-      const clicksResult = await env.DB.prepare(`
-        SELECT tool_id, tool_name, tool_url, category, COUNT(*) as click_count
-        FROM tool_clicks
-        GROUP BY tool_id
-        ORDER BY click_count DESC
-        LIMIT 20
-      `).all();
+      let query = `
+        SELECT c.tool_id, c.tool_name, c.tool_url, c.category, COUNT(*) as click_count
+        FROM tool_clicks c
+      `;
+      let conditions = [];
+      let params = [];
+
+      if (pGender || pAgeGroup || pJob) {
+        query += `
+          LEFT JOIN (
+            SELECT session_id, user_gender, user_job, 
+              CASE 
+                WHEN (2026 - user_birth_year + 1) < 20 THEN '10대 이하'
+                WHEN (2026 - user_birth_year + 1) BETWEEN 20 AND 29 THEN '20대'
+                WHEN (2026 - user_birth_year + 1) BETWEEN 30 AND 39 THEN '30대'
+                WHEN (2026 - user_birth_year + 1) BETWEEN 40 AND 49 THEN '40대'
+                ELSE '50대 이상'
+              END AS age_range
+            FROM search_logs 
+            WHERE session_id IS NOT NULL 
+            GROUP BY session_id
+          ) s ON c.session_id = s.session_id
+        `;
+
+        if (pGender) { conditions.push(`s.user_gender = ?`); params.push(pGender); }
+        if (pJob) { conditions.push(`s.user_job = ?`); params.push(pJob); }
+        if (pAgeGroup) { conditions.push(`s.age_range = ?`); params.push(pAgeGroup); }
+      }
+
+      if (conditions.length > 0) {
+        query += ` WHERE ` + conditions.join(' AND ');
+      }
+
+      query += ` GROUP BY c.tool_id ORDER BY click_count DESC LIMIT 50`;
+
+      const clicksResult = await env.DB.prepare(query).bind(...params).all();
       top_clicks = clicksResult.results || [];
     } catch (e) { console.error("top_clicks query failed (table may not exist yet - run /api/db/init):", e); }
 
