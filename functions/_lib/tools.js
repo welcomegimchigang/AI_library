@@ -446,7 +446,7 @@ function normalizeTool(rawTool) {
     serviceName: String(rawTool.name || "").trim(),
     website: String(rawTool.url || "").trim(),
     serviceType: String(rawTool.category || rawTool.type || "").trim(),
-    location: "해외", // Scraped from awesome list are mostly global
+    location: (rawTool.url || "").includes(".kr") ? "국내" : "해외", // URL 기반 자동 판단
     keyFeatures_list: [String(rawTool.description || "")],
     price_bucket: priceBucket,
     supportedPlatforms: "web", // Safe default
