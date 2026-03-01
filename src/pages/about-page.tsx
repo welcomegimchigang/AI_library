@@ -56,7 +56,7 @@ export function AboutPage() {
                     <strong>운영자:</strong> LoominAI Team
                   </li>
                   <li>
-                    <strong>이메일:</strong> foryouai@ai-library-dhm.pages.dev
+                    <strong>이메일:</strong> sunguk040403@gmail.com
                   </li>
                 </ul>
                 <p>
@@ -72,10 +72,10 @@ export function AboutPage() {
                 언제든지 연락해 주세요!
                 <br />
                 <a
-                  href="mailto:foryouai@ai-library-dhm.pages.dev"
+                  href="mailto:sunguk040403@gmail.com"
                   className="mt-2 inline-block font-medium text-blue-600 hover:underline"
                 >
-                  foryouai@ai-library-dhm.pages.dev
+                  sunguk040403@gmail.com
                 </a>
               </p>
             </section>
