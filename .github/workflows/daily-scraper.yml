@@ -56,6 +56,10 @@ jobs:
       - name: Run Clean DB Script
         run: python scripts/clean_db.py
 
+      # 2.5 location 필드 자동 분류 (국내/해외)
+      - name: Auto-classify Location
+        run: python scripts/add_location.py
+
       - name: Check for DB Changes
         id: db-status
         run: |
