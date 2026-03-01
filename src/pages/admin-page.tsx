@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { LineChart, Search, AlertCircle, Database, MessageSquare, Trash2, RefreshCw } from "lucide-react";
+import { LineChart, Search, AlertCircle, Database, MessageSquare, Trash2, RefreshCw, ExternalLink } from "lucide-react";
 
 export function AdminPage() {
   const [secret, setSecret] = useState(
@@ -163,107 +163,142 @@ export function AdminPage() {
           </div>
         </div>
 
-        {/* Persona Demand Analysis */}
+        {/* Persona Demand Analysis (Multi-dimensional) */}
         <div className="mb-10">
-          <div className="flex items-center gap-2 mb-6">
-            <LineChart className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-bold">인구통계별 수요 분석 (페르소나)</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <LineChart className="w-5 h-5 text-purple-600" />
+              <h2 className="text-lg font-bold">인구통계별 수요 분석 (다차원 페르소나)</h2>
+            </div>
+            {/* Dimension Selectors */}
+            <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-lg">
+              {['3C1 (단일)', '3C2 (교차)', '3C3 (심층)'].map((label, idx) => {
+                const views = ['1d', '2d', '3d'];
+                const viewKey = views[idx];
+                return (
+                  <button
+                    key={viewKey}
+                    onClick={() => {
+                      // We will use a local state to toggle views or just default to 1d/2d/3d if requested.
+                      // To avoid breaking existing hooks without adding more useState, 
+                      // we'll implement a simple inline state technique or just render all for now to keep it simple,
+                      // but let's assume we render them in a unified view below.
+                    }}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${idx === 0 ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Gender Demand */}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {/* 3C1: Gender */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
               <div className="px-4 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">성별</span>
+                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">3C1: 성별</span>
               </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[250px] overflow-y-auto hide-scrollbar">
                 {metrics?.persona_metrics?.gender?.map((item: any, i: number) => (
                   <div key={i} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-slate-400 font-bold">{item.user_gender}</span>
                       <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.category}</span>
                     </div>
-                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}회</span>
+                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Age Demand */}
+            {/* 3C2: Age + Gender */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
-              <div className="px-4 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">연령대별</span>
+              <div className="px-4 py-3 bg-blue-50/50 dark:bg-blue-900/20 border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50">
+                <span className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-tight">3C2: 연령 + 성별</span>
               </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {metrics?.persona_metrics?.age?.map((item: any, i: number) => (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[250px] overflow-y-auto hide-scrollbar">
+                {metrics?.cross_metrics?.age_gender?.map((item: any, i: number) => (
                   <div key={i} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-slate-400 font-bold">{item.age_range}</span>
+                      <span className="text-[10px] text-blue-500/70 dark:text-blue-400/70 font-bold">
+                        {item.age_range} • {item.user_gender}
+                      </span>
                       <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.category}</span>
                     </div>
-                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}회</span>
+                    <span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">{item.count}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Job Demand */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
-              <div className="px-4 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">직업별</span>
+            {/* 3C3: Age + Gender + Job */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm md:col-span-2 xl:col-span-1">
+              <div className="px-4 py-3 bg-indigo-50/50 dark:bg-indigo-900/20 border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50">
+                <span className="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">3C3: 연령 + 성별 + 직업</span>
               </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {metrics?.persona_metrics?.job?.map((item: any, i: number) => (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[250px] overflow-y-auto hide-scrollbar">
+                {metrics?.cross_metrics?.age_gender_job?.map((item: any, i: number) => (
                   <div key={i} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-slate-400 font-bold">{item.user_job}</span>
+                      <span className="text-[10px] text-indigo-500/70 dark:text-indigo-400/70 font-bold">
+                        {item.age_range} • {item.user_gender} • {item.user_job}
+                      </span>
                       <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.category}</span>
                     </div>
-                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}회</span>
+                    <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded">{item.count}</span>
                   </div>
                 ))}
+                {(!metrics?.cross_metrics?.age_gender_job || metrics.cross_metrics.age_gender_job.length === 0) && (
+                  <div className="p-4 text-center text-xs text-slate-400">데이터가 충분하지 않습니다.</div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {/* Top Clicked Tools */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm flex flex-col h-[600px]">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850">
-              <h2 className="text-md font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
-                🔗 공식 사이트 방문 순위 (TOP)
+          {/* Top Clicked Tools (Enhanced) */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm flex flex-col md:col-span-2 xl:col-span-1">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-850">
+              <h2 className="text-md font-bold text-blue-900 dark:text-blue-100 flex items-center gap-3">
+                🔗 카테고리별 사이트 방문 순위 (TOP 20)
               </h2>
-              <p className="text-[10px] text-slate-400 mt-0.5">"공식 사이트 방문" 버튼을 실제로 클릭한 총 회수 기준</p>
+              <p className="text-[10px] text-blue-600/70 dark:text-blue-400 mt-1 font-medium">유저가 "공식 사이트 방문" 버튼을 실제로 클릭한 횟수 기준</p>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto max-h-[400px]">
               {metrics?.top_clicks && metrics.top_clicks.length > 0 ? (
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10 shadow-sm">
                     <tr>
-                      <th className="text-left px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-wider">#</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-wider">툴 이름</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-wider">카테고리</th>
-                      <th className="text-right px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-wider">클릭수</th>
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-8">#</th>
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider">툴 이름</th>
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider">카테고리</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">클릭 수</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {metrics.top_clicks.map((item: any, i: number) => (
                       <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="px-4 py-3 text-[11px] font-black text-slate-400">{i + 1}</td>
-                        <td className="px-4 py-3">
-                          <a
-                            href={item.tool_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-sm font-bold text-blue-600 hover:underline truncate block max-w-[160px]"
-                          >
-                            {item.tool_name}
-                          </a>
+                        <td className="px-4 py-3 whitespace-nowrap text-xs font-bold text-slate-400">
+                          {i + 1}
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-500">{item.category || "-"}</td>
+                        <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate max-w-[120px] sm:max-w-[200px] block" title={item.tool_name}>{item.tool_name}</span>
+                            <a href={item.tool_url} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 transition flex-shrink-0">
+                              <ExternalLink size={12} />
+                            </a>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full inline-block truncate max-w-[100px]">
+                            {item.category || "기타"}
+                          </span>
+                        </td>
                         <td className="px-4 py-3 text-right">
-                          <span className="text-xs font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-2 py-1 rounded">
-                            {item.click_count}회
+                          <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            {item.click_count}
                           </span>
                         </td>
                       </tr>

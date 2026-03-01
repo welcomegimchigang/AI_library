@@ -1,4 +1,4 @@
-﻿import { Sparkles, LogOut, Globe } from "lucide-react";
+﻿import { Sparkles, LogOut, Globe, Moon, Sun } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,9 +7,35 @@ import { getUserSession, logout } from "@/lib/auth";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { Button } from "@/components/ui/button";
 
+// A simple local theme hook 
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") || "light";
+    }
+    return "light";
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === "light" ? "dark" : "light"));
+  };
+  return { theme, toggleTheme };
+}
+
 export function Header() {
   const { t, i18n } = useTranslation();
   const [user, setUser] = useState<any>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const session = getUserSession();
@@ -59,6 +85,16 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-amber-400 px-2 rounded-full"
+            title={theme === "light" ? "개발자 모드(다크) 켜기" : "라이트 모드 켜기"}
+          >
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </Button>
+
           <Button
             variant="ghost"
             size="sm"
