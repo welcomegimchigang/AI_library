@@ -89,10 +89,20 @@ export function Header() {
             variant="ghost"
             size="sm"
             onClick={toggleTheme}
-            className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-amber-400 px-2 rounded-full"
+            className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-amber-400 px-2 sm:px-3 rounded-full flex items-center gap-2"
             title={theme === "light" ? "개발자 모드(다크) 켜기" : "라이트 모드 켜기"}
           >
-            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            {theme === "light" ? (
+              <>
+                <Moon size={16} />
+                <span className="text-[10px] font-bold hidden sm:block">개발자 모드</span>
+              </>
+            ) : (
+              <>
+                <Sun size={16} />
+                <span className="text-[10px] font-bold hidden sm:block text-amber-500">일반 모드</span>
+              </>
+            )}
           </Button>
 
           <Button

@@ -440,47 +440,55 @@ export function ToolLibrary() {
                   <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4 flex-1">
                     {i18n.language === 'en' && tool.description_en ? tool.description_en : tool.description}
                   </p>
-                  <div className="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleUpvote(tool.id)}
-                      className="text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
-                    >
-                      <ThumbsUp size={16} className="mr-2" />
-                      {t("library.upvote")} {upvotes[tool.id] || 0}
-                    </Button>
-                    <div className="flex-1 flex justify-end items-center">
-                      <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                        {t("library.visits", { count: formatNumber(tool.monthly_visits || 0) })}
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (!getUserSession()) {
-                          alert(
-                            "로그인이 필요한 기능입니다. 우측 상단에서 로그인해주세요.",
-                          );
-                          return;
-                        }
-                        setSelectedTool(tool);
-                      }}
-                      className="text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400"
-                    >
-                      <MessageSquare size={16} className="mr-2" />
-                      리뷰
-                    </Button>
-                    <a href={tool.url} target="_blank" rel="noreferrer">
+                  <div className="flex flex-wrap justify-between items-center gap-y-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button
+                        variant="ghost"
                         size="sm"
-                        className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500"
+                        onClick={() => handleUpvote(tool.id)}
+                        className="text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 px-2"
                       >
-                        {t("library.visit")}
-                        <ExternalLink size={14} className="ml-2" />
+                        <ThumbsUp size={16} className="mr-1" />
+                        {t("library.upvote")} {upvotes[tool.id] || 0}
                       </Button>
-                    </a>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (!getUserSession()) {
+                            alert(
+                              "로그인이 필요한 기능입니다. 우측 상단에서 로그인해주세요.",
+                            );
+                            return;
+                          }
+                          setSelectedTool(tool);
+                        }}
+                        className="text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 px-2"
+                      >
+                        <MessageSquare size={16} className="mr-1" />
+                        리뷰
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between w-full sm:w-auto flex-1 gap-2 mt-1 sm:mt-0">
+                      <div className="flex-1 flex justify-end items-center mr-2">
+                        <div className="flex flex-col items-end leading-tight">
+                          <span className="text-[10px] text-slate-500 font-medium">월 방문자수</span>
+                          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                            {formatNumber(tool.monthly_visits || 0)}
+                          </span>
+                        </div>
+                      </div>
+                      <a href={tool.url} target="_blank" rel="noreferrer">
+                        <Button
+                          size="sm"
+                          className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 whitespace-nowrap"
+                        >
+                          {t("library.visit")}
+                          <ExternalLink size={14} className="ml-1" />
+                        </Button>
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>

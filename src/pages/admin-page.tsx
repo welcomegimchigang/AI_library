@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { LineChart, Search, AlertCircle, Database, MessageSquare, Trash2, RefreshCw, ExternalLink } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { LineChart, Search, AlertCircle, Database, MessageSquare, Trash2, RefreshCw, ExternalLink, Moon, Sun } from "lucide-react";
 
 export function AdminPage() {
   const [secret, setSecret] = useState(
@@ -9,6 +9,35 @@ export function AdminPage() {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // --- Dynamic Filters State ---
+  // 1. Persona Dimension Toggles
+  const [activeDimensions, setActiveDimensions] = useState({
+    gender: true,
+    age: false,
+    job: false
+  });
+
+  // 2. Top Clicks Category Filter
+  const [selectedCategory, setSelectedCategory] = useState("전체");
+
+  // --- Theme State (Admin) ---
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("theme") || "light";
+    return "light";
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
 
   const fetchAllData = async (currentSecret: string) => {
     if (!currentSecret) return;
@@ -132,11 +161,18 @@ export function AdminPage() {
           </div>
           <div className="flex items-center gap-3">
             <button
+              onClick={toggleTheme}
+              className="flex items-center justify-center w-9 h-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 dark:hover:text-amber-400 rounded-md transition-all shadow-sm"
+              title={theme === "light" ? "개발자 모드(다크) 켜기" : "라이트 모드 켜기"}
+            >
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <button
               onClick={() => fetchAllData(secret)}
-              className="flex items-center gap-2 text-xs font-bold px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md transition-all shadow-sm"
+              className="flex items-center gap-2 text-xs font-bold px-4 h-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md transition-all shadow-sm"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? "데이터 갱신 중" : "데이터 새로고침"}
+              {loading ? "데이터 갱신 중" : "새로고침"}
             </button>
           </div>
         </div>
@@ -163,96 +199,106 @@ export function AdminPage() {
           </div>
         </div>
 
-        {/* Persona Demand Analysis (Multi-dimensional) */}
+        {/* Persona Demand Analysis (Dynamic Filters) */}
         <div className="mb-10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col mb-6 gap-4">
             <div className="flex items-center gap-2">
               <LineChart className="w-5 h-5 text-purple-600" />
-              <h2 className="text-lg font-bold">인구통계별 수요 분석 (다차원 페르소나)</h2>
+              <h2 className="text-lg font-bold">인구통계별 수요 분석 (다이내믹 페르소나)</h2>
             </div>
-            {/* Dimension Selectors */}
-            <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-lg">
-              {['3C1 (단일)', '3C2 (교차)', '3C3 (심층)'].map((label, idx) => {
-                const views = ['1d', '2d', '3d'];
-                const viewKey = views[idx];
-                return (
+
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-lg shadow-sm">
+              <span className="text-sm font-bold text-slate-500">분석 차원 선택:</span>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'gender', label: '성별' },
+                  { id: 'age', label: '연령' },
+                  { id: 'job', label: '직업' }
+                ].map(dim => (
                   <button
-                    key={viewKey}
+                    key={dim.id}
                     onClick={() => {
-                      // We will use a local state to toggle views or just default to 1d/2d/3d if requested.
-                      // To avoid breaking existing hooks without adding more useState, 
-                      // we'll implement a simple inline state technique or just render all for now to keep it simple,
-                      // but let's assume we render them in a unified view below.
+                      const newDims = { ...activeDimensions, [dim.id]: !(activeDimensions as any)[dim.id] };
+                      // 최소 1개는 켜져있어야 함
+                      if (!Object.values(newDims).some(Boolean)) return;
+                      setActiveDimensions(newDims);
                     }}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${idx === 0 ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                    className={`px-4 py-1.5 text-xs font-bold rounded-full transition-colors border ${(activeDimensions as any)[dim.id]
+                      ? 'bg-purple-600 border-purple-600 text-white shadow-sm'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
                   >
-                    {label}
+                    {dim.label}
                   </button>
-                )
-              })}
+                ))}
+              </div>
+              <div className="ml-auto flex items-center gap-2 text-[10px] font-black tracking-widest uppercase text-slate-400">
+                {['단일 (3C1)', '교차 (3C2)', '심층 (3C3)'][Object.values(activeDimensions).filter(Boolean).length - 1]} 모드
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {/* 3C1: Gender */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
-              <div className="px-4 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-tight">3C1: 성별</span>
-              </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[250px] overflow-y-auto hide-scrollbar">
-                {metrics?.persona_metrics?.gender?.map((item: any, i: number) => (
-                  <div key={i} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-slate-400 font-bold">{item.user_gender}</span>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.category}</span>
-                    </div>
-                    <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">{item.count}</span>
-                  </div>
-                ))}
-              </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850">
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">선택된 타겟 그룹 수요</h3>
             </div>
+            <div className="max-h-[350px] overflow-y-auto">
+              {(() => {
+                let currentData = [];
+                let labelMaker: (item: any) => string = () => "";
 
-            {/* 3C2: Age + Gender */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
-              <div className="px-4 py-3 bg-blue-50/50 dark:bg-blue-900/20 border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50">
-                <span className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-tight">3C2: 연령 + 성별</span>
-              </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[250px] overflow-y-auto hide-scrollbar">
-                {metrics?.cross_metrics?.age_gender?.map((item: any, i: number) => (
-                  <div key={i} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-blue-500/70 dark:text-blue-400/70 font-bold">
-                        {item.age_range} • {item.user_gender}
-                      </span>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.category}</span>
-                    </div>
-                    <span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">{item.count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                const { gender, age, job } = activeDimensions;
 
-            {/* 3C3: Age + Gender + Job */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm md:col-span-2 xl:col-span-1">
-              <div className="px-4 py-3 bg-indigo-50/50 dark:bg-indigo-900/20 border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50">
-                <span className="text-xs font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">3C3: 연령 + 성별 + 직업</span>
-              </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[250px] overflow-y-auto hide-scrollbar">
-                {metrics?.cross_metrics?.age_gender_job?.map((item: any, i: number) => (
-                  <div key={i} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-indigo-500/70 dark:text-indigo-400/70 font-bold">
-                        {item.age_range} • {item.user_gender} • {item.user_job}
-                      </span>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.category}</span>
-                    </div>
-                    <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded">{item.count}</span>
+                // 3C3
+                if (gender && age && job) {
+                  currentData = metrics?.cross_metrics?.age_gender_job || [];
+                  labelMaker = (item: any) => `${item.age_range} • ${item.user_gender} • ${item.user_job}`;
+                }
+                // 3C2
+                else if (gender && age) {
+                  currentData = metrics?.cross_metrics?.age_gender || [];
+                  labelMaker = (item: any) => `${item.age_range} • ${item.user_gender}`;
+                } else if (gender && job) {
+                  currentData = metrics?.cross_metrics?.job_gender || [];
+                  labelMaker = (item: any) => `${item.user_job} • ${item.user_gender}`;
+                } else if (age && job) {
+                  currentData = metrics?.cross_metrics?.age_job || [];
+                  labelMaker = (item: any) => `${item.age_range} • ${item.user_job}`;
+                }
+                // 3C1
+                else if (gender) {
+                  currentData = metrics?.persona_metrics?.gender || [];
+                  labelMaker = (item: any) => `${item.user_gender}`;
+                } else if (age) {
+                  currentData = metrics?.persona_metrics?.age || [];
+                  labelMaker = (item: any) => `${item.age_range}`;
+                } else if (job) {
+                  currentData = metrics?.persona_metrics?.job || [];
+                  labelMaker = (item: any) => `${item.user_job}`;
+                }
+
+                if (!currentData || currentData.length === 0) {
+                  return <div className="p-10 text-center text-sm text-slate-400">데이터가 존재하지 않거나 부족합니다.</div>;
+                }
+
+                return (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {currentData.map((item: any, i: number) => (
+                      <div key={i} className="px-6 py-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-purple-600 dark:text-purple-400 font-bold">{labelMaker(item)}</span>
+                          <span className="text-base font-black text-slate-800 dark:text-slate-200">{item.category}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-black text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-md shadow-sm border border-slate-200 dark:border-slate-700">
+                            {item.count}회 검색
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {(!metrics?.cross_metrics?.age_gender_job || metrics.cross_metrics.age_gender_job.length === 0) && (
-                  <div className="p-4 text-center text-xs text-slate-400">데이터가 충분하지 않습니다.</div>
-                )}
-              </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -262,10 +308,38 @@ export function AdminPage() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm flex flex-col md:col-span-2 xl:col-span-1">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-850">
               <h2 className="text-md font-bold text-blue-900 dark:text-blue-100 flex items-center gap-3">
-                🔗 카테고리별 사이트 방문 순위 (TOP 20)
+                🔗 방문 순위 및 카테고리 필터링 (TOP 20)
               </h2>
               <p className="text-[10px] text-blue-600/70 dark:text-blue-400 mt-1 font-medium">유저가 "공식 사이트 방문" 버튼을 실제로 클릭한 횟수 기준</p>
+
+              {/* Category Filter Chips */}
+              {metrics?.top_clicks && metrics.top_clicks.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCategory("전체")}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all border ${selectedCategory === "전체"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                      }`}
+                  >
+                    전체보기
+                  </button>
+                  {Array.from(new Set(metrics.top_clicks.map((item: any) => item.category || "기타"))).map((cat: any) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all border ${selectedCategory === cat
+                          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                          : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
             <div className="flex-1 overflow-y-auto max-h-[400px]">
               {metrics?.top_clicks && metrics.top_clicks.length > 0 ? (
                 <table className="w-full text-sm">
@@ -278,37 +352,39 @@ export function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {metrics.top_clicks.map((item: any, i: number) => (
-                      <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="px-4 py-3 whitespace-nowrap text-xs font-bold text-slate-400">
-                          {i + 1}
-                        </td>
-                        <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate max-w-[120px] sm:max-w-[200px] block" title={item.tool_name}>{item.tool_name}</span>
-                            <a href={item.tool_url} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 transition flex-shrink-0">
-                              <ExternalLink size={12} />
-                            </a>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full inline-block truncate max-w-[100px]">
-                            {item.category || "기타"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                            {item.click_count}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {metrics.top_clicks
+                      .filter((item: any) => selectedCategory === "전체" || (item.category || "기타") === selectedCategory)
+                      .map((item: any, i: number) => (
+                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                          <td className="px-4 py-3 whitespace-nowrap text-xs font-bold text-slate-400">
+                            {i + 1}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate max-w-[120px] sm:max-w-[200px] block" title={item.tool_name}>{item.tool_name}</span>
+                              <a href={item.tool_url} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 transition flex-shrink-0">
+                                <ExternalLink size={12} />
+                              </a>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full inline-block truncate max-w-[100px]">
+                              {item.category || "기타"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                              {item.click_count}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
-                  <p className="text-sm">아직 클릭 데이터가 없습니다.</p>
-                  <p className="text-[10px]">툴 상세 페이지에서 "공식 사이트 방문" 클릭시 수집됩니다.</p>
+                <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 p-10">
+                  <p className="text-sm font-bold">아직 클릭 데이터가 없습니다.</p>
+                  <p className="text-[10px]">툴 상세 페이지에서 "공식 사이트 방문" 클릭 시 데이터가 수집됩니다.</p>
                 </div>
               )}
             </div>
