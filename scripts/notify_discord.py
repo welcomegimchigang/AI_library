@@ -66,6 +66,12 @@ def main():
             deleted += 1
 
     total_tools = len(new_tools)
+
+    # Location 분류 통계 계산
+    domestic = [t for t in new_tools.values() if t.get('location') == '국내']
+    overseas = [t for t in new_tools.values() if t.get('location') == '해외']
+    no_location = [t for t in new_tools.values() if not t.get('location')]
+    domestic_sample = ', '.join([t.get('name', '')[:10] for t in domestic[:5]])
     
     if added == 0 and deleted == 0 and updated == 0:
         print("No changes in tools.jsonl. Skipping Discord notification to avoid spam.")
@@ -81,7 +87,9 @@ def main():
             {"name": "새로 추가된 도구 🟢", "value": f"{added}개", "inline": True},
             {"name": "삭제된 도구 🔴", "value": f"{deleted}개", "inline": True},
             {"name": "내용 업데이트 🟡", "value": f"{updated}개", "inline": True},
-            {"name": "📈 현재 총 AI 도구 개수", "value": f"{total_tools:,}개", "inline": False}
+            {"name": "📈 현재 총 AI 도구 개수", "value": f"{total_tools:,}개", "inline": False},
+            {"name": "🇰🇷 국내 / 🌍 해외", "value": f"{len(domestic)}개 / {len(overseas)}개 (미분류: {len(no_location)}개)", "inline": False},
+            {"name": "국내 툴 샘플", "value": domestic_sample if domestic_sample else "없음", "inline": False}
         ],
         "footer": {"text": "이 알림은 GitHub Actions에서 자동 발송되었습니다."}
     }
