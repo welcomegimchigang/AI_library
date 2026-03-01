@@ -215,7 +215,7 @@ export async function onRequestPost(context) {
 
     return Response.json({
       reply: {
-        text: gpt?.reply || "요청하신 조건에 맞는 AI 툴을 추천해 드립니다. 아래 카드를 확인해보세요!",
+        text: `조건에 맞는 AI 툴 ${toolsOut.length}개를 찾았습니다. 아래 카드를 확인해보세요!`,
       },
       state: "recommended",
       missing: [],
