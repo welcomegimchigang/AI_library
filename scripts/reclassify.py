@@ -20,7 +20,7 @@ CATEGORY_KEYWORDS = {
         "summary", "요약", "translate", "번역", "grammar", "문법", "essay",
         "blog", "블로그", "article", "기사", "copy", "카피", "content", "콘텐츠",
         "email", "이메일", "chat", "chatbot", "챗봇", "gpt", "llm", "language model",
-        "paraphrase", "proofread", "seo", "marketing", "마케팅",
+        "paraphrase", "proofread", "seo",
     ],
     "개발/코드": [
         "code", "코드", "coding", "코딩", "develop", "개발", "programming", "프로그래밍",
@@ -35,6 +35,36 @@ CATEGORY_KEYWORDS = {
         "edit", "편집", "stream", "스트리밍", "youtube", "유튜브", "shorts", "쇼츠",
         "song", "노래", "sing", "beat", "remix", "dj",
     ],
+    "교육/학습": [
+        "education", "교육", "learn", "학습", "study", "공부", "tutor", "튜터",
+        "course", "강의", "school", "학교", "student", "학생", "teacher", "선생님",
+        "math", "수학", "science", "과학", "language", "언어", "quiz", "퀴즈",
+        "exam", "시험", "academy", "학원", "class", "수업"
+    ],
+    "건강/피트니스": [
+        "health", "건강", "fitness", "피트니스", "workout", "운동", "diet", "다이어트",
+        "mental", "멘탈", "medical", "의료", "doctor", "의사", "diagnosis", "진단",
+        "sleep", "수면", "meditation", "명상", "therapy", "테라피", "fitness", "헬스",
+        "yoga", "요가", "food", "음식", "nutrition", "영양",
+    ],
+    "비즈니스/마케팅": [
+        "business", "비즈니스", "marketing", "마케팅", "sales", "영업", "crm",
+        "analytics", "분석", "startup", "스타트업", "ads", "광고", "campaign", "캠페인",
+        "customer", "고객", "lead", "리드", "social media", "소셜미디어", "brand", "브랜드",
+        "commerce", "커머스", "쇼핑", "store", "스토어", "창업",
+    ],
+    "생산성/협업": [
+        "productivity", "생산성", "collaboration", "협업", "team", "팀", "task", "태스크",
+        "project", "프로젝트", "calendar", "캘린더", "schedule", "설정", "일정", "time", "시간",
+        "meeting", "미팅", "회의", "note", "노트", "memo", "메모", "workspace", "워크스페이스",
+        "notion", "노션", "slack", "슬랙",
+    ],
+    "금융/투자": [
+        "finance", "금융", "투자", "invest", "stock", "주식", "crypto", "암호화폐",
+        "bitcoin", "비트코인", "trading", "트레이딩", "bank", "은행", "money", "돈",
+        "wallet", "지갑", "budget", "예산", "accounting", "회계", "tax", "세금",
+        "economy", "경제", "wealth", "자산", "portfolio", "포트폴리오"
+    ]
 }
 
 def classify_tool(tool):

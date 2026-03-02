@@ -1,16 +1,14 @@
 ﻿const CATEGORY_RULES = [
-  { id: "글쓰기/컨텐츠", keywords: ["글", "블로그", "카피", "콘텐츠", "컨텐츠", "작문", "요약", "문서", "writing", "content"] },
-  { id: "디자인/아트", keywords: ["디자인", "이미지", "아트", "포스터", "브랜딩", "일러스트", "design", "art", "그림"] },
-  { id: "비디오/오디오", keywords: ["영상", "비디오", "쇼츠", "릴스", "편집", "음악", "오디오", "노래", "음원", "작곡", "voice", "video", "audio", "music"] },
-  { id: "개발/프로그래밍", keywords: ["개발", "코드", "프로그래밍", "디버깅", "깃", "github", "api", "coding", "dev"] },
-  { id: "검색/데이터", keywords: ["검색", "리서치", "조사", "데이터", "분석", "크롤링", "search", "research", "data"] },
-  { id: "생산성/협업도구", keywords: ["생산성", "협업", "회의", "정리", "노트", "프로젝트", "task", "collab", "productivity", "ppt", "발표"] },
-  { id: "비즈니스/마케팅", keywords: ["마케팅", "광고", "리드", "세일즈", "사업", "비즈니스", "브랜드", "campaign", "marketing"] },
-  { id: "교육/학습", keywords: ["학습", "교육", "공부", "튜터", "문제", "퀴즈", "learning", "education", "study"] },
-  { id: "게임", keywords: ["게임", "game", "npc", "맵", "레벨"] },
-  { id: "엔터테인먼트/기타", keywords: ["재미", "엔터", "취미", "기타", "entertainment", "법률"] },
-  { id: "건강/피트니스", keywords: ["건강", "운동", "피트니스", "헬스", "다이어트", "명상", "수면", "의료", "health", "fitness", "workout", "exercise", "medical", "wellness"] },
-  { id: "금융/투자", keywords: ["금융", "투자", "주식", "암호화폐", "가계부", "세금", "부동산", "finance", "invest", "stock", "crypto", "budget", "tax"] },
+  { id: "텍스트/문서", keywords: ["글", "블로그", "카피", "콘텐츠", "컨텐츠", "작문", "요약", "문서", "writing", "content", "텍스트", "text", "문법", "번역"] },
+  { id: "이미지/아트", keywords: ["디자인", "이미지", "아트", "포스터", "브랜딩", "일러스트", "design", "art", "그림", "사진", "로고", "캔버스", "canvas"] },
+  { id: "비디오/오디오", keywords: ["영상", "비디오", "쇼츠", "릴스", "편집", "음악", "오디오", "노래", "음원", "작곡", "voice", "video", "audio", "music", "사운드", "팟캐스트"] },
+  { id: "개발/코드", keywords: ["개발", "코드", "프로그래밍", "디버깅", "깃", "github", "api", "coding", "dev", "데이터베이스", "db", "sql"] },
+  { id: "교육/학습", keywords: ["학습", "교육", "공부", "튜터", "문제", "퀴즈", "learning", "education", "study", "학원", "강의", "수업", "수학", "영어", "언어"] },
+  { id: "건강/피트니스", keywords: ["건강", "운동", "피트니스", "헬스", "다이어트", "명상", "수면", "의료", "health", "fitness", "workout", "exercise", "medical", "진단", "의사"] },
+  { id: "비즈니스/마케팅", keywords: ["마케팅", "광고", "리드", "세일즈", "사업", "비즈니스", "브랜드", "campaign", "marketing", "영업", "crm", "쇼핑", "커머스"] },
+  { id: "생산성/협업", keywords: ["생산성", "협업", "회의", "정리", "노트", "프로젝트", "task", "collab", "productivity", "일정", "캘린더", "메모", "팀"] },
+  { id: "금융/투자", keywords: ["금융", "투자", "주식", "암호화폐", "가계부", "세금", "부동산", "finance", "invest", "stock", "crypto", "budget", "tax", "경제", "은행"] },
+  { id: "기타", keywords: ["재미", "엔터", "취미", "기타", "엔터테인먼트", "검색", "데이터", "리서치"] },
 ];
 
 const WORKFLOW_TEMPLATES = {

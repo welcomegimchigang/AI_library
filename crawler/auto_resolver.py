@@ -150,12 +150,17 @@ def analyze_and_extract_tool(query, search_results):
 - "한국사 공부 AI" → AI 기반 교육 플랫폼 (예: Quizlet, 뤼튼 등)
 - "디자인 AI" → AI 기반 디자인 도구 (예: Canva, Figma AI 등)
 
-## 카테고리 분류:
-- 이미지/디자인/아트 관련 → "이미지/아트"
-- 글쓰기/번역/문서 관련 → "텍스트/문서"
-- 코딩/개발 관련 → "개발/코드"
-- 영상/음악/오디오 관련 → "비디오/오디오"
-- 그 외 모두 → "기타"
+## 카테고리 분류 (다음 중 하나를 정확히 선택):
+- "이미지/아트"
+- "텍스트/문서"
+- "개발/코드"
+- "비디오/오디오"
+- "교육/학습"
+- "건강/피트니스"
+- "비즈니스/마케팅"
+- "생산성/협업"
+- "금융/투자"
+- 위 분류에 애매하면 "기타"
 
 ## 응답 형식:
 반드시 아래 JSON 형식으로만 응답하세요. 마크다운 코드블록 없이 순수 JSON만:
@@ -221,7 +226,10 @@ def append_to_jsonl(tool_data):
         
         # Determine category from GPT response or default
         category = tool_data.get("category", "기타")
-        valid_categories = ["이미지/아트", "텍스트/문서", "개발/코드", "비디오/오디오", "기타"]
+        valid_categories = [
+            "이미지/아트", "텍스트/문서", "개발/코드", "비디오/오디오", "교육/학습",
+            "건강/피트니스", "비즈니스/마케팅", "생산성/협업", "금융/투자", "기타"
+        ]
         if category not in valid_categories:
             category = "기타"
         
