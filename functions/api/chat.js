@@ -8,7 +8,7 @@
   matchQ,
   text
 } from "../_lib/tools.js";
-import { generateChatLayerWithGpt } from "../_lib/openai.js";
+import { generateChatLayerWithGpt, generateAdminActionWithGpt } from "../_lib/openai.js";
 
 const GUEST_LIMIT = 10;
 const USER_LIMIT = 30;
@@ -73,46 +73,56 @@ export async function onRequestPost(context) {
     const prevFilters = body?.filters && typeof body.filters === "object" ? body.filters : {};
     const history = Array.isArray(body?.history) ? body.history : [];
 
-    // [NEW] 관리자 수동 툴 수집 슬래시 커맨드 (/adminsupernova)
+    // [NEW] 관리자 수동 툴 수집/삭제/변경 슬래시 커맨드 (/adminsupernova)
     if (message.startsWith("/adminsupernova")) {
-      const toolName = message.replace("/adminsupernova", "").trim();
+      const adminCommand = message.replace("/adminsupernova", "").trim();
 
-      if (!toolName) {
+      if (!adminCommand) {
         return Response.json({
-          reply: { text: "명령어 오류: 수집할 AI 툴 이름을 함께 입력해주세요. (예: /adminsupernova Vrew)" },
+          reply: { text: "명령어 오류: 수행하실 작업을 자연어로 입력해주세요. (예: /adminsupernova Vrew 툴 내 DB에서 없애놔라)" },
           state: "collecting", missing: [], quickReplies: [], filters: prevFilters, tools: [],
         });
       }
 
-      // KV DB에 다이렉트 푸시 (pending 상태)
+      // 1. GPT에게 관리자 명령어 분석 요청
+      const adminGpt = await generateAdminActionWithGpt(env, adminCommand);
+      const action = adminGpt?.action || "add"; // 기본값
+      const targetTool = adminGpt?.targetTool || adminCommand;
+
+      const actionTextKr = action === "delete" ? "삭제" : action === "update" ? "수정" : "수집/추가";
+      const kvStatus = action === "delete" ? "pending_delete" : action === "update" ? "pending_update" : "pending";
+      const kvIntent = action === "delete" ? "admin_delete" : action === "update" ? "admin_update" : "manual_admin_insert";
+
+      // 2. KV DB에 다이렉트 푸시
       if (env.MISSING_TOOLS_KV) {
-        const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        const queryKey = `admin_${action}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         context.waitUntil(
           env.MISSING_TOOLS_KV.put(queryKey, JSON.stringify({
-            query: toolName,
-            intent: "manual_admin_insert",
-            filters: { q: toolName },
-            status: "pending",
+            query: targetTool,
+            intent: kvIntent,
+            filters: { q: targetTool },
+            status: kvStatus,
+            original_command: adminCommand,
             timestamp: Date.now()
           })).catch(console.error)
         );
       }
 
-      // 디스코드 알림
+      // 3. 디스코드 알림
       if (env.DISCORD_WEBHOOK_URL) {
         context.waitUntil(
           fetch(env.DISCORD_WEBHOOK_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `🛠️ **관리자 수동 툴 수집 요청 추가됨**\n- 툴 이름: \`${toolName}\`\n- 설명: \`/adminsupernova\` 커맨드에 의해 새벽 깃헙 액션 수집 봇 대기열에 다이렉트로 추가되었습니다.`
+              content: `🛠️ **관리자 ${actionTextKr} 지시 접수됨**\n- 대상 툴: \`${targetTool}\`\n- 액션: \`${action}\`\n- 원본 지시: "${adminCommand}"\n- 설명: 새벽 깃헙 액션 봇이 해당 지시를 처리합니다.`
             })
           }).catch(undefined)
         );
       }
 
       return Response.json({
-        reply: { text: `[관리자 모드] 성공✨\n'${toolName}' 도구를 스크래핑 대기열에 수동으로 추가했습니다. 새벽에 GitHub Actions 봇이 수집합니다.` },
+        reply: { text: `[관리자 모드] 접수 완료✨\n'${targetTool}' 도구에 대한 ${actionTextKr} 지시가 정상적으로 봇 대기열에 들어갔습니다!` },
         state: "collecting", missing: [], quickReplies: [], filters: prevFilters, tools: [],
       });
     }

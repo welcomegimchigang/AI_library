@@ -92,3 +92,79 @@
     return fallbackIntent();
   }
 }
+
+export async function generateAdminActionWithGpt(env, adminCommand) {
+  const apiKey = env?.OPENAI_API_KEY;
+  if (!apiKey) {
+    return { action: "add", targetTool: adminCommand, reason: "No API Key" };
+  }
+
+  const system = [
+    "당신은 AI 도구 데이터베이스 관리자 비서입니다.",
+    "사용자가 입력한 관리자 명령어를 분석하여 의도를 파악하세요.",
+    "=== 응답 규칙 ===",
+    "1. 명령어에서 사용자가 지시하는 작업(action)을 파악합니다. (추가, 삭제, 수정 중 하나)",
+    "   - '지워', '없애', '삭제', '빼' 등 -> 'delete'",
+    "   - '수정', '바꿔', '변경' 등 -> 'update'",
+    "   - '넣어', '추가', '수집', '찾아' 또는 그 외 기본 요청 -> 'add'",
+    "2. 명령어가 가리키는 대상 AI 툴의 이름(targetTool)을 추출하세요.",
+    "   - 예: 'Vrew 툴 내 DB에서 없애놔라' -> targetTool: 'Vrew'",
+    "   - 예: 'ChatGPT 추가해줘' -> targetTool: 'ChatGPT'",
+    "3. 기타 참고사항이나 이유(reason)를 짧게 요약하세요.",
+    "4. 반드시 아래 JSON 형식으로만 반환하세요."
+  ].join("\n");
+
+  const userPayload = {
+    command: adminCommand,
+    required_output_shape: {
+      action: "add | delete | update",
+      targetTool: "string (툴 이름만)",
+      reason: "string"
+    }
+  };
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: JSON.stringify(userPayload) },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 150,
+      }),
+    });
+
+    if (!res.ok) {
+      return { action: "add", targetTool: adminCommand, reason: "API Error" };
+    }
+
+    const payload = await res.json();
+    const text = payload.choices?.[0]?.message?.content;
+    if (!text) {
+      return { action: "add", targetTool: adminCommand, reason: "Empty Response" };
+    }
+
+    try {
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== "object") {
+        return { action: "add", targetTool: adminCommand, reason: "Parse Error" };
+      }
+      return {
+        action: String(parsed.action || "add"),
+        targetTool: String(parsed.targetTool || adminCommand),
+        reason: String(parsed.reason || "")
+      };
+    } catch {
+      return { action: "add", targetTool: adminCommand, reason: "Parse Exception" };
+    }
+  } catch {
+    return { action: "add", targetTool: adminCommand, reason: "Fetch Exception" };
+  }
+}

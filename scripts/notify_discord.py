@@ -48,22 +48,22 @@ def main():
     old_tools = load_tools(content=old_content)
     new_tools = load_tools(filepath="public/data/tools.jsonl")
     
-    added = 0
-    deleted = 0
-    updated = 0
+    added = []
+    deleted = []
+    updated = []
     
     for key, new_tool in new_tools.items():
         if key not in old_tools:
-            added += 1
+            added.append(new_tool.get("name", "Unknown"))
         else:
             old_tool = old_tools[key]
             # Simple content change check (ignoring dict order)
             if json.dumps(new_tool, sort_keys=True) != json.dumps(old_tool, sort_keys=True):
-                updated += 1
+                updated.append(new_tool.get("name", "Unknown"))
                 
-    for key in old_tools.keys():
+    for key, old_tool in old_tools.items():
         if key not in new_tools:
-            deleted += 1
+            deleted.append(old_tool.get("name", "Unknown"))
 
     total_tools = len(new_tools)
 
@@ -73,20 +73,28 @@ def main():
     no_location = [t for t in new_tools.values() if not t.get('location')]
     domestic_sample = ', '.join([t.get('name', '')[:10] for t in domestic[:5]])
     
-    if added == 0 and deleted == 0 and updated == 0:
+    if not added and not deleted and not updated:
         print("No changes in tools.jsonl. Skipping Discord notification to avoid spam.")
         return
 
     date_str = datetime.now().strftime("%Y-%m-%d")
+    
+    def format_list(items):
+        if not items: return "0개"
+        # 10개까지만 이름 보여주고 나머지는 생략
+        sample = ", ".join(items[:10])
+        if len(items) > 10:
+            sample += f" 외 {len(items)-10}개"
+        return f"**{len(items)}개** ({sample})"
     
     embed = {
         "title": f"🤖 LoominAI 데일리 자동 업데이트 보고 ({date_str})",
         "description": "어젯밤부터 오늘 아침까지 크롤링 및 데이터 정제가 완료되었습니다! 🚀\n\n**📊 오늘의 DB 변경 요약**",
         "color": 3447003, # Blue color
         "fields": [
-            {"name": "새로 추가된 도구 🟢", "value": f"{added}개", "inline": True},
-            {"name": "삭제된 도구 🔴", "value": f"{deleted}개", "inline": True},
-            {"name": "내용 업데이트 🟡", "value": f"{updated}개", "inline": True},
+            {"name": "새로 추가된 도구 🟢", "value": format_list(added), "inline": False},
+            {"name": "삭제된 도구 🔴", "value": format_list(deleted), "inline": False},
+            {"name": "내용 업데이트 🟡", "value": format_list(updated), "inline": False},
             {"name": "📈 현재 총 AI 도구 개수", "value": f"{total_tools:,}개", "inline": False},
             {"name": "🇰🇷 국내 / 🌍 해외", "value": f"{len(domestic)}개 / {len(overseas)}개 (미분류: {len(no_location)}개)", "inline": False},
             {"name": "국내 툴 샘플", "value": domestic_sample if domestic_sample else "없음", "inline": False}
