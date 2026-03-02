@@ -1,0 +1,7 @@
+name = "ai-library"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "ai-tools-index"

@@ -8,7 +8,7 @@
   matchQ,
   text
 } from "../_lib/tools.js";
-import { generateChatLayerWithGpt, generateAdminActionWithGpt } from "../_lib/openai.js";
+import { getEmbedding, generateRagResponse, generateAdminActionWithGpt } from "../_lib/openai.js";
 
 const GUEST_LIMIT = 10;
 const USER_LIMIT = 30;
@@ -127,14 +127,39 @@ export async function onRequestPost(context) {
       });
     }
 
-    // 1. AI에게 의도(Intent) 파악 및 필터 추출 요청
-    const gpt = await generateChatLayerWithGpt(env, { message, history });
+    // 1. 질문 임베딩 생성
+    const vector = await getEmbedding(env, message);
+    let contextDocs = "";
+    let matchedToolsIds = [];
 
-    // 2. Case A: 무관한 질문이거나 프롬프트 응답 실패
-    if (!gpt || gpt.intent === "off_topic") {
+    // 2. Vectorize DB 쿼리
+    if (vector && env.VECTORIZE) {
+      try {
+        const queryRes = await env.VECTORIZE.query(vector, { topK: 10, returnMetadata: 'all' });
+        if (queryRes && queryRes.matches) {
+          matchedToolsIds = queryRes.matches.map(m => Number(m.id));
+          contextDocs = queryRes.matches.map((m, idx) => {
+            const meta = m.metadata || {};
+            return `[도구 ${idx + 1}]
+이름: ${meta.name || '알 수 없음'}
+카테고리: ${meta.category || ''}
+URL: ${meta.url || ''}
+(유사도 점수: ${m.score.toFixed(3)})`;
+          }).join('\n\n');
+        }
+      } catch (e) {
+        console.error("Vectorize query failed:", e);
+      }
+    }
+
+    // 3. RAG 기반 생성 요청
+    const rag = await generateRagResponse(env, { message, history }, contextDocs);
+
+    // 4. (Case A) AI 툴 관련 질문이 아니거나 무관한 질문으로 판단된 경우
+    if (!rag.is_ai_related) {
       return Response.json({
         reply: {
-          text: gpt?.reply || "안녕하세요! 저는 AI 툴 추천 챗봇입니다. 무엇을 도와드릴까요?",
+          text: rag.reply || "안녕하세요! 저는 AI 툴 추천 챗봇입니다. 무엇을 도와드릴까요?",
         },
         state: "collecting",
         missing: [],
@@ -144,19 +169,9 @@ export async function onRequestPost(context) {
       });
     }
 
-    // 3. Case B: 툴 검색 요청 (search_tools)
-    const filters = {
-      ...prevFilters,
-      ...(gpt.filters || {}),
-    };
-
-    const tools = await loadTools(request, env);
-    const rankedTools = rankTools(tools, filters, message, 5);
-    const matchedCount = rankedTools.length;
-
     const persona = body?.persona || {}; // { gender, birthYear, job }
 
-    // 4. [NEW] D1에 유저 검색 로그 저장 (비동기로 백그라운드 처리)
+    // 5. [NEW] D1에 유저 검색 로그 저장 (비동기로 백그라운드 처리)
     if (env.DB) {
       context.waitUntil(
         env.DB.prepare(`
@@ -165,9 +180,9 @@ export async function onRequestPost(context) {
         `)
           .bind(
             message.slice(0, 500),
-            gpt.intent || "unknown",
-            JSON.stringify(gpt.filters || {}),
-            matchedCount,
+            rag.has_matching_tools ? "rag_recommend" : "rag_missing",
+            JSON.stringify(prevFilters || {}),
+            matchedToolsIds.length,
             persona.gender || null,
             persona.birthYear || null,
             persona.job || null,
@@ -178,16 +193,16 @@ export async function onRequestPost(context) {
       );
     }
 
-    // 5. Case B-1: 매칭되는 툴이 없는 경우
-    if (matchedCount === 0) {
-      // (기존) KV DB에 실패한 검색어 저장 및 Discord 알림 로직 유지
+    // 6. (Case B) 조건에 맞는 툴이 없는 경우
+    if (!rag.has_matching_tools) {
       if (env.MISSING_TOOLS_KV) {
         const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         context.waitUntil(
           env.MISSING_TOOLS_KV.put(queryKey, JSON.stringify({
             query: message,
-            intent: gpt?.intent,
-            filters: gpt?.filters || {},
+            intent: "rag_missing",
+            missing_criteria: rag.missing_criteria,
+            filters: prevFilters,
             status: "pending",
             timestamp: Date.now()
           })).catch(console.error)
@@ -200,20 +215,31 @@ export async function onRequestPost(context) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `🚨 **AI 툴 검색 실패 건 발생**\n- 유저 입력: \`${message}\`\n- GPT 분석 의도: \`${gpt?.intent}\`\n- 설명: Cloudflare D1 \`search_logs\` 및 KV DB에 적재되었습니다.`
+              content: `🚨 **AI 툴 검색 실패 건 발생 (RAG 기반)**\n- 유저 입력: \`${message}\`\n- 누락된 핵심 조건: \`${rag.missing_criteria}\`\n- 설명: Cloudflare D1 \`search_logs\` 및 KV DB에 적재되었습니다.`
             })
           }).catch(undefined)
         );
       }
 
       return Response.json({
-        reply: { text: "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다." },
-        state: "refining", missing: [], quickReplies: defaultQuickReplies(filters, []), filters, tools: [],
+        reply: { text: rag.reply || "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다." },
+        state: "refining", missing: [], quickReplies: defaultQuickReplies(prevFilters, []), filters: prevFilters, tools: [],
       });
     }
 
-    // 6. Case B-2: 매칭되는 툴이 있는 경우
-    const toolsOut = rankedTools.map((t) => ({
+    // 7. (Case C) 조건에 맞는 툴 추천
+    const allTools = await loadTools(request, env);
+    let recommendedTools = [];
+    // Vectorize에서 반환된 상위 ID 순서대로 매칭
+    for (const id of matchedToolsIds) {
+      const found = allTools.find(t => t.damoa_id === id);
+      if (found) recommendedTools.push(found);
+    }
+
+    // UI에 보여줄 최대 5개 추출
+    recommendedTools = recommendedTools.slice(0, 5);
+
+    const toolsOut = recommendedTools.map((t) => ({
       id: t.damoa_id,
       name: t.serviceName,
       url: t.website,
@@ -224,13 +250,11 @@ export async function onRequestPost(context) {
     }));
 
     return Response.json({
-      reply: {
-        text: `조건에 맞는 AI 툴 ${toolsOut.length}개를 찾았습니다. 아래 카드를 확인해보세요!`,
-      },
+      reply: { text: rag.reply },
       state: "recommended",
       missing: [],
-      quickReplies: defaultQuickReplies(filters, []),
-      filters,
+      quickReplies: defaultQuickReplies(prevFilters, []),
+      filters: prevFilters,
       tools: toolsOut,
     });
   } catch (error) {

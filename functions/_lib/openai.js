@@ -1,55 +1,65 @@
-﻿export async function generateChatLayerWithGpt(env, input) {
-  const m = String(input?.message || "");
-  const history = input?.history || [];
-  const fallbackIntent = () => {
-    const isSearchWord = /(추천|알려|찾아|있어|뭐가|뭘까|도구|툴|ai|어떤|만드는|설계|다시 보기|위주로 보기|더 보기|포함 보기|보여|보여줘|만|빼고|위주로|버전|공부|직업|하려고|할려고|위해|평가|분석|검사|테스트|진단|점검|무료|유료|pc|모바일|사용할)/i.test(m);
-    return {
-      intent: isSearchWord ? "search_tools" : "off_topic",
-      filters: { q: m.length > 2 ? m : null }
-    };
-  };
-
+﻿export async function getEmbedding(env, text) {
   const apiKey = env?.OPENAI_API_KEY;
-  if (!apiKey) return fallbackIntent();
+  if (!apiKey) return null;
 
-  const { message } = input;
+  try {
+    const res = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "text-embedding-3-small",
+        input: text,
+      }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data[0].embedding;
+  } catch (e) {
+    console.error("Embedding API Error:", e);
+    return null;
+  }
+}
 
-  const system = [
-    "너는 AI 툴 추천 서비스 'LoominAI'의 전문 상담사이자 친절한 도우미이다.",
-    "=== 엄격한 응답 규칙 (반드시 지킬 것) ===",
-    "1. 관련성 판단 (의도 분류): 사용자의 질문이 'AI 툴 추천 및 검색'과 명확히 관련이 있는지 선행 판단한다.",
-    "   [핵심 판별법] 사용자가 완제품 텍스트(예: 코드 완성본, 번역본, 루틴 텍스트 등)를 '직접 작성해달라'고 요구하면 무조건 'off_topic'.",
-    "   하지만 사용자가 특정 목적을 달성하게 도와주는 '도구/앱/서비스/AI'를 가리키며 '추천해, 알려줘, 찾아줘, 있어?' 등으로 질문하면 무조건 'search_tools'로 취급한다.",
-    "   (단어를 불문하고, 목적 달성을 '자신이 수행할 도구'를 찾는 뉘앙스라면 모두 search_tools 에 해당함)",
-    "2. 후속 메시지 처리: 이전 대화 맥락이 있을 경우, 현재 메시지를 독립적으로 판단하지 말고 대화 흐름 전체를 고려하여 의도와 필터를 결정해라.",
-    "3. 거절 대응: 'off_topic'으로 분류된 경우, 대답(reply)은 '저는 AI 추천 챗봇이기에 그러한 기능을 직접 수행할 수 없습니다. 대신 관련 능력을 가진 AI 툴을 찾아드릴게요.' 라고 정중하게 거절만 작성한다.",
-    "4. 도구 검색 대응: 'search_tools'로 지정된 경우, 질문자의 언어에 맞춰 3줄 이내로 답변(reply)을 자연스럽게 요약하여 작성한다.",
-    "5. 필터 추출: 사용자가 명시한 세부 조건을 분석하여 filters 객체를 채운다.",
-    "   - 검색 키워드(q): 사용자가 찾는 기능의 핵심 명사형 키워드 1~2개만 추출. (절대로 '짜주는', '해주는' 등의 서술어 포함 금지. 예: '헬스 루틴 짜주는' -> '헬스 루틴', '썸네일 만들어주는' -> '썸네일')",
-    "   - 카테고리(category): 글쓰기/컨텐츠, 디자인/아트, 비디오/오디오, 개발/프로그래밍 등 정해진 항목 중 택 1",
-    "   - 지역(location): '한국 꺼만', '국내', '한국어 지원', '국내 것만' 등의 표현이 있으면 반드시 '국내'로 설정. '해외', '영어권' 등은 '해외'로 설정.",
-    "",
-    "=== 이전 대화 맥락 ===",
-    history.length > 0
-      ? history.map(h => `${h.role}: ${h.text}`).join("\n")
-      : "(첫 메시지)",
-    "",
-    "오직 아래 JSON 형식으로만 반환해라."
-  ].join("\n");
+export async function generateRagResponse(env, input, contextDocs) {
+  const apiKey = env?.OPENAI_API_KEY;
+  if (!apiKey) return { is_ai_related: true, has_matching_tools: true, reply: "API 키가 없습니다." };
+
+  const { message, history } = input;
+
+  const system = `당신은 현존하는 최고의 'AI 도구 큐레이터'입니다.
+당신의 유일한 목적은 데이터베이스에 있는 AI 도구를 사용자에게 친절하게 추천하고 설명하는 것입니다.
+
+[엄격한 행동 지침 - 필수 준수 사항]
+1. (관련성 체크) 사용자의 질문이 'AI 도구 추천, AI 정보, 특정 AI 앱 검색'과 명확히 관련이 있는지 먼저 판단하세요.
+   [핵심 판별법] 사용자가 완제품 텍스트 (코드 완성본, 번역본 등)를 '본인에게 직접 작성해달라'고 요구하면 무조건 \`is_ai_related\`를 false로 설정하고, "저는 AI 추천 챗봇이기에 직접 수행할 수는 없습니다."라고 부드럽게 거절합니다.
+   하지만 사용자가 특정 목적을 달성하게 도와주는 '도구/앱/서비스/AI'를 가리키며 '추천해, 알려줘, 찾아줘, 있어?' 등으로 질문하면 무조건 \`is_ai_related\`를 true로 설정하세요.
+
+2. (DB 검색 및 매칭 체크) AI 관련 질문(\`is_ai_related\`=true)이라면, 제공된 [내부 데이터베이스 정보] 내에서 사용자의 상세 조건을 만족하는 도구가 있는지 확인하세요.
+   조건에 완벽히 부합하거나 매우 유사한 도구가 있다면 해당 도구들을 기반으로 추천해주세요.
+   만약 **조건에 맞는 도구가 데이터베이스에 아예 없다면**, 억지로 지어내지 말고 \`has_matching_tools\`를 false로 설정하세요.
+   그리고 대답은 "아쉽게도 현재 해당 조건을 만족하는 전용 툴은 없습니다."라고 명확히 안내해주세요.
+   이때 사용자가 찾고자 했던 핵심 조건/기능을 \`missing_criteria\` 항목에 짧게 요약해서 적어주세요.
+
+3. (정상 추천) 조건에 맞는 도구가 있다면, \`has_matching_tools\`를 true로 설정하고 추천 이유와 특징을 자연스럽게 설명해주세요.
+   사용자가 특정 도구의 이름(한글/영문)을 언급했다면, 해당 내용을 우선적으로 찾아 추천합니다.
+
+[내부 데이터베이스 정보]
+${contextDocs}
+
+오직 전달받은 JSON 스키마 형식으로만 반환하세요.`;
 
   const userPayload = {
     message,
+    history,
     required_output_shape: {
-      intent: "off_topic | search_tools",
-      reply: "string (무관한 질문은 단호히 거절, 관련 질문은 친절한 안내)",
-      filters: {
-        category: "'글쓰기/컨텐츠' | '디자인/아트' | '비디오/오디오' | '개발/프로그래밍' | '검색/데이터' | '생산성/협업도구' | '비즈니스/마케팅' | '교육/학습' | '게임' | '엔터테인먼트/기타' | null",
-        budget: "free | paid | null",
-        platform: "web | mobile | windows | mac | null",
-        location: "국내 | 해외 | null",
-        q: "string (핵심 명사 키워드만) | null"
-      }
-    },
+      is_ai_related: "boolean",
+      has_matching_tools: "boolean",
+      reply: "string (자연스러운 챗봇의 답변 텍스트)",
+      missing_criteria: "string (조건에 맞는 도구가 없을 경우 사용자가 원한 기능 요약, 찾았다면 빈 문자열)"
+    }
   };
 
   try {
@@ -66,30 +76,26 @@
           { role: "user", content: JSON.stringify(userPayload) },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 200,
+        max_tokens: 300,
+        temperature: 0.2,
       }),
     });
 
-    if (!res.ok) return fallbackIntent();
+    if (!res.ok) return { is_ai_related: true, has_matching_tools: false, reply: "OpenAI API 호출 에러 발생." };
 
     const payload = await res.json();
     const text = payload.choices?.[0]?.message?.content;
-    if (!text) return fallbackIntent();
+    const parsed = JSON.parse(text || "{}");
 
-    try {
-      const parsed = JSON.parse(text);
-      if (!parsed || typeof parsed !== "object") return fallbackIntent();
-
-      return {
-        intent: String(parsed.intent || "off_topic"),
-        reply: String(parsed.reply || ""),
-        filters: parsed.filters && typeof parsed.filters === "object" ? parsed.filters : {},
-      };
-    } catch {
-      return fallbackIntent();
-    }
-  } catch {
-    return fallbackIntent();
+    return {
+      is_ai_related: parsed.is_ai_related !== false,
+      has_matching_tools: parsed.has_matching_tools !== false,
+      reply: parsed.reply || "추천 정보를 가져왔습니다.",
+      missing_criteria: parsed.missing_criteria || ""
+    };
+  } catch (e) {
+    console.error("RAG GPT Error:", e);
+    return { is_ai_related: true, has_matching_tools: false, reply: "알 수 없는 에러가 발생했습니다." };
   }
 }
 
