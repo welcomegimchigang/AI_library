@@ -159,11 +159,11 @@ URL: ${meta.url || ''}
     // 3. RAG 기반 생성 요청
     const rag = await generateRagResponse(env, { message, history }, contextDocs);
 
-    // 4. (Case A) AI 툴 관련 질문이 아니거나 무관한 질문으로 판단된 경우
+    // 4. (Case A) AI 툴 관련 질문이 아닌 경우 (1줄 내외 짧은 답변)
     if (!rag.is_ai_related) {
       return Response.json({
         reply: {
-          text: rag.reply || "안녕하세요! 저는 AI 툴 추천 챗봇입니다. 무엇을 도와드릴까요?",
+          text: rag.reply || "저는 AI 툴 추천 챗봇입니다. AI 관련 질문을 해주시면 감사하겠습니다!",
         },
         state: "collecting",
         missing: [],
@@ -197,7 +197,7 @@ URL: ${meta.url || ''}
       );
     }
 
-    // 6. (Case B) 조건에 맞는 툴이 없는 경우
+    // 6. (Case B) 조건에 맞는 툴이 없는 경우 (반드시 정해진 문구 출력)
     if (!rag.has_matching_tools) {
       if (env.MISSING_TOOLS_KV) {
         const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -226,7 +226,7 @@ URL: ${meta.url || ''}
       }
 
       return Response.json({
-        reply: { text: rag.reply || "죄송합니다. 요청하신 자료는 찾지 못했습니다. 빠른 시일 내에 추가하겠습니다." },
+        reply: { text: "죄송합니다. 빠른 시일 내에 추가하겠습니다." },
         state: "refining", missing: [], quickReplies: defaultQuickReplies(prevFilters, []), filters: prevFilters, tools: [],
       });
     }
