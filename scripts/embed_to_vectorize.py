@@ -39,7 +39,8 @@ def process_and_embed():
             meta = {
                 "name": data.get("name", "Unknown"),
                 "url": data.get("url", ""),
-                "category": data.get("category", "")
+                "category": data.get("category", ""),
+                "description": data.get("description", "")[:500] # GPT 판단을 돕기 위해 설명 추가
             }
             
             # 텍스트 컨텍스트 구성

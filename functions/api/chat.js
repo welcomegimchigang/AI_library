@@ -143,6 +143,7 @@ export async function onRequestPost(context) {
             return `[도구 ${idx + 1}]
 이름: ${meta.name || '알 수 없음'}
 카테고리: ${meta.category || ''}
+설명: ${meta.description || ''}
 URL: ${meta.url || ''}
 (유사도 점수: ${m.score.toFixed(3)})`;
           }).join('\n\n');
