@@ -184,7 +184,7 @@ URL: ${meta.url || ''}
         `)
           .bind(
             message.slice(0, 500),
-            rag.has_matching_tools ? "rag_recommend" : "rag_missing",
+            searchQuery.slice(0, 500), // gpt_intent 필드에 재작성된 쿼리를 저장하여 디버깅 용이하게 함
             JSON.stringify(prevFilters || {}),
             matchedToolsIds.length,
             persona.gender || null,

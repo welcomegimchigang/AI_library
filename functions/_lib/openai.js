@@ -30,20 +30,14 @@ export async function generateRagResponse(env, input, contextDocs) {
   const { message, history } = input;
 
   const system = `당신은 현존하는 최고의 'AI 도구 큐레이터'입니다.
-당신의 유일한 목적은 데이터베이스에 있는 AI 도구를 사용자에게 친절하게 추천하고 설명하는 것입니다.
+당신의 유일한 목적은 제공된 [내부 데이터베이스 정보]에 있는 AI 도구를 사용자에게 정확하게 추천하는 것입니다.
 
 [엄격한 행동 지침 - 필수 준수 사항]
-1. (관련성 체크) 사용자의 질문이 'AI 도구 추천, AI 정보, 특정 AI 앱 검색'과 명확히 관련이 있는지 먼저 판단하세요.
-   [핵심 판별법] 사용자가 완제품 텍스트 (코드 완성본, 번역본 등)를 '본인에게 직접 작성해달라'고 요구하면 무조건 \`is_ai_related\`를 false로 설정하고, "저는 AI 추천 챗봇이기에 직접 수행할 수는 없습니다."라고 부드럽게 거절합니다.
-   하지만 사용자가 특정 목적을 달성하게 도와주는 '도구/앱/서비스/AI'를 가리키며 '추천해, 알려줘, 찾아줘, 있어?' 등으로 질문하면 무조건 \`is_ai_related\`를 true로 설정하세요.
-
-2. (DB 검색 및 매칭 체크) AI 관련 질문(\`is_ai_related\`=true)이라면, 제공된 [내부 데이터베이스 정보] 내에서 사용자의 상세 조건을 최대한 만족하는 도구가 있는지 확인하세요.
-   **중요**: 완벽히 일치하는 도구가 없더라도, 사용자의 의도나 카테고리가 유사하다면 억지로 거절하지 말고 "정확히 일치하는 것은 없지만, 가장 비슷한 도구로는 이런 것들이 있습니다"라고 친절하게 추천해주세요.
-   만약 **데이터베이스의 어떤 도구와도 전혀 관련이 없는 경우**에만 \`has_matching_tools\`를 false로 설정하세요.
-   이때 사용자가 찾고자 했던 핵심 조건/기능을 \`missing_criteria\` 항목에 짧게 요약해서 적어주세요.
-
-3. (정상 추천) 조건에 맞는 도구가 있다면, \`has_matching_tools\`를 true로 설정하고 추천 이유와 특징을 자연스럽게 설명해주세요.
-   사용자가 특정 도구의 이름(한글/영문)을 언급했다면, 해당 내용을 우선적으로 찾아 추천합니다.
+1. (정보의 출처) **오직 [내부 데이터베이스 정보]에 포함된 도구만 추천하세요.** 당신이 개인적으로 알고 있는 도구라도 데이터베이스에 없다면 절대 상세히 설명하지 마세요.
+2. (매칭 판단) 
+   - 사용자가 찾는 도구가 데이터베이스에 있다면: \`has_matching_tools\`를 true로 설정하고 해당 도구의 특징을 설명하세요.
+   - 사용자가 찾는 도구가 데이터베이스에 없다면: \`has_matching_tools\`를 false로 설정하고, "현재 데이터베이스에는 해당 조건에 맞는 도구가 없습니다"라고만 답하세요. **절대 데이터베이스에 없는 도구의 URL이나 상세 기능을 당신의 지식으로 지어내지 마세요.**
+3. (대화의 연속성) 사용자가 이전 질문과 무관한 새로운 주제(예: 운동 앱 이야기하다가 영어 공부 앱 질문)를 꺼냈다면, 이전 주제는 완전히 무시하고 새로운 주제에 대해서만 데이터베이스를 검색하세요.
 
 [내부 데이터베이스 정보]
 ${contextDocs}
@@ -185,10 +179,15 @@ export async function contextualizeQuery(env, input) {
   // 이전 대화 내역이 없으면 문맥화가 필요 없음
   if (!history || history.length === 0) return message;
 
+  // 히스토리가 너무 길면 최근 3개만 반영 (노이즈 감소)
+  const recentHistory = history.slice(-3);
+
   const system = `당신은 사용자의 질문을 검색에 최적화된 문장으로 재작성하는 전문가입니다.
-대화 내역을 바탕으로 사용자의 마지막 질문을 '독립적인 검색용 질문'으로 재작성하세요.
-예를 들어, "운동 관련 AI 추천해줘" 후에 "모바일 앱은?" 이라고 했다면, "운동 관련 모바일 AI 앱 추천"으로 재작성해야 합니다.
-절대 답변을 하지 마세요. 오직 재작성된 검색 문장만 출력하세요.`;
+
+[작업 규칙]
+1. (문맥 유지) 이전 대화에서 특정 주제(예: "운동")가 진행 중이고 현재 질문이 모호하다면 (예: "모바일 앱은?"), 그 주제를 병합하세요. (예: "운동 관련 모바일 AI 앱 추천")
+2. (주제 전환 탐지) **가장 중요**: 현재 질문이 이전 대화 주제와 완전히 다른 새로운 주제(예: 운동 이야기하다가 갑자기 "영어 공부")라면, 이전 문맥을 완전히 삭제하고 현재 질문만 독립적으로 재작성하세요.
+3. 절대 질문에 답변하지 마세요. 오직 재작성된 검색어만 출력하세요.`;
 
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -201,7 +200,7 @@ export async function contextualizeQuery(env, input) {
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: system },
-          { role: "user", content: `대화 내역:\n${JSON.stringify(history.slice(-5))}\n\n현재 질문: ${message}\n\n재작성된 검색어:` },
+          { role: "user", content: `대화 내역:\n${JSON.stringify(recentHistory)}\n\n현재 질문: ${message}\n\n재작성된 검색어:` },
         ],
         max_tokens: 100,
         temperature: 0,
@@ -210,7 +209,9 @@ export async function contextualizeQuery(env, input) {
 
     if (!res.ok) return message;
     const json = await res.json();
-    return json.choices?.[0]?.message?.content?.trim() || message;
+    const rewritten = json.choices?.[0]?.message?.content?.trim() || message;
+    console.log(`[RAG] Rewritten Query: ${rewritten}`);
+    return rewritten;
   } catch (e) {
     console.error("Contextualize Query Error:", e);
     return message;
