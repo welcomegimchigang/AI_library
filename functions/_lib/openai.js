@@ -40,6 +40,8 @@ export async function generateRagResponse(env, input, contextDocs) {
    - 사용자가 원하는 핵심 기능을 1문장으로 요약하고(missing_criteria에),
    - 추가 질문 1개만 하세요. (예: "모바일/PC 중 어디서 편집하시나요?")
 
+오직 JSON 형식으로만 반환하세요.
+
 [데이터베이스 정보]
 ${contextDocs}`;
 
