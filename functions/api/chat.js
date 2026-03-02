@@ -145,28 +145,72 @@ export async function onRequestPost(context) {
     // 3. Vectorize DB 쿼리
     if (vector && env.VECTORIZE) {
       try {
-        let queryRes = await env.VECTORIZE.query(vector, { topK: 10, returnMetadata: 'all' });
+        let queryRes = await env.VECTORIZE.query(vector, { topK: 10, returnMetadata: "all" });
 
         // 검색 결과가 너무 없으면 원본 메시지로 다시 한번 시도 (문맥화 노이즈 대비)
         if ((!queryRes.matches || queryRes.matches.length === 0) && searchQuery !== message) {
           const originalVector = await getEmbedding(env, message);
           if (originalVector) {
-            queryRes = await env.VECTORIZE.query(originalVector, { topK: 10, returnMetadata: 'all' });
+            queryRes = await env.VECTORIZE.query(originalVector, { topK: 10, returnMetadata: "all" });
           }
         }
 
-        if (queryRes && queryRes.matches && queryRes.matches.length > 0) {
-          matchedToolsIds = queryRes.matches.map(m => Number(m.id));
-          contextDocs = queryRes.matches.map((m, idx) => {
-            const meta = m.metadata || {};
-            return `[도구 ${idx + 1}]
-이름: ${meta.name || '알 수 없음'}
-카테고리: ${meta.category || ''}
-설명: ${meta.description || ''}
-URL: ${meta.url || ''}
-(유사도 점수: ${m.score.toFixed(3)})`;
-          }).join('\n\n');
+        // ---- DEBUG LOGS (원인 확정용) ----
+        const matches = queryRes?.matches || [];
+        console.log("[RAG] message:", message);
+        console.log("[RAG] searchQuery:", searchQuery);
+        console.log("[RAG] embedding len:", Array.isArray(vector) ? vector.length : null);
+        console.log("[Vectorize] matchCount:", matches.length);
+        console.log("[Vectorize] topScore:", matches[0]?.score);
+        console.log(
+          "[Vectorize] top1 metaKeys:",
+          matches[0]?.metadata ? Object.keys(matches[0].metadata) : null
+        );
+
+        // ---- metadata key compatibility ----
+        const pick = (meta, keys) => {
+          for (const k of keys) {
+            const v = meta?.[k];
+            if (typeof v === "string" && v.trim()) return v.trim();
+          }
+          return "";
+        };
+
+        // ---- score threshold (서버에서 판단) ----
+        const topScore = matches[0]?.score ?? 0;
+        const SCORE_THRESHOLD = 0.22; // 필요 시 조정 (0.20~0.30 권장 시작)
+        const hasGoodMatch = matches.length > 0 && topScore >= SCORE_THRESHOLD;
+
+        if (hasGoodMatch) {
+          matchedToolsIds = matches
+            .map((m) => {
+              const n = Number(m.id);
+              return Number.isFinite(n) ? n : null;
+            })
+            .filter(Boolean);
+
+          contextDocs = matches
+            .map((m, idx) => {
+              const meta = m.metadata || {};
+              const name = pick(meta, ["name", "serviceName", "title"]);
+              const category = pick(meta, ["category", "serviceType", "type"]);
+              const description = pick(meta, ["description", "desc", "summary"]);
+              const url = pick(meta, ["url", "website", "link"]);
+
+              return `[도구 ${idx + 1}]
+이름: ${name || "알 수 없음"}
+카테고리: ${category || "unknown"}
+설명: ${description || "설명 없음"}
+URL: ${url || "URL 없음"}`;
+            })
+            .join("\n\n");
+        } else {
+          // 매칭 품질 낮으면 GPT에게 빈 컨텍스트 전달 (모델이 score 보고 무시하는 현상 방지)
+          matchedToolsIds = [];
+          contextDocs = "";
         }
+
+        console.log("[RAG] contextDocs length:", contextDocs?.length || 0);
       } catch (e) {
         console.error("Vectorize query failed:", e);
       }
@@ -174,6 +218,12 @@ URL: ${meta.url || ''}
 
     // 3. RAG 기반 생성 요청
     const rag = await generateRagResponse(env, { message, history }, contextDocs);
+
+    const hasContext = typeof contextDocs === "string" && contextDocs.trim().length > 80;
+
+    // GPT가 보수적으로 has_matching_tools=false를 주더라도,
+    // 서버가 컨텍스트가 있으면 추천 플로우를 타게 한다.
+    const effectiveHasMatchingTools = hasContext ? true : !!rag.has_matching_tools;
 
     // 4. (Case A) AI 툴 관련 질문이 아닌 경우 (1줄 내외 짧은 답변)
     if (!rag.is_ai_related) {
@@ -214,7 +264,7 @@ URL: ${meta.url || ''}
     }
 
     // 6. (Case B) 조건에 맞는 툴이 없는 경우 (반드시 정해진 문구 출력)
-    if (!rag.has_matching_tools) {
+    if (!effectiveHasMatchingTools) {
       if (env.MISSING_TOOLS_KV) {
         const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         context.waitUntil(
