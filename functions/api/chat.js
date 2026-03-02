@@ -128,18 +128,34 @@ export async function onRequestPost(context) {
     }
 
     // 1. 문맥 파악 및 검색 최적화 (대화 내역 반영)
-    const searchQuery = await contextualizeQuery(env, { message, history });
+    let searchQuery = await contextualizeQuery(env, { message, history });
+    if (!searchQuery) searchQuery = message;
 
-    // 2. 질문 임베딩 생성 (재작성된 searchQuery 사용)
-    const vector = await getEmbedding(env, searchQuery);
+    // 2. 질문 임베딩 생성
+    let vector = await getEmbedding(env, searchQuery);
+
+    // [Fallback] 재작성된 쿼리로 임베딩 실패 시 원본 메시지로 재시도
+    if (!vector && searchQuery !== message) {
+      vector = await getEmbedding(env, message);
+    }
+
     let contextDocs = "";
     let matchedToolsIds = [];
 
-    // 2. Vectorize DB 쿼리
+    // 3. Vectorize DB 쿼리
     if (vector && env.VECTORIZE) {
       try {
-        const queryRes = await env.VECTORIZE.query(vector, { topK: 10, returnMetadata: 'all' });
-        if (queryRes && queryRes.matches) {
+        let queryRes = await env.VECTORIZE.query(vector, { topK: 10, returnMetadata: 'all' });
+
+        // 검색 결과가 너무 없으면 원본 메시지로 다시 한번 시도 (문맥화 노이즈 대비)
+        if ((!queryRes.matches || queryRes.matches.length === 0) && searchQuery !== message) {
+          const originalVector = await getEmbedding(env, message);
+          if (originalVector) {
+            queryRes = await env.VECTORIZE.query(originalVector, { topK: 10, returnMetadata: 'all' });
+          }
+        }
+
+        if (queryRes && queryRes.matches && queryRes.matches.length > 0) {
           matchedToolsIds = queryRes.matches.map(m => Number(m.id));
           contextDocs = queryRes.matches.map((m, idx) => {
             const meta = m.metadata || {};
