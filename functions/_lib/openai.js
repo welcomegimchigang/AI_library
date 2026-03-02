@@ -37,10 +37,9 @@ export async function generateRagResponse(env, input, contextDocs) {
    [핵심 판별법] 사용자가 완제품 텍스트 (코드 완성본, 번역본 등)를 '본인에게 직접 작성해달라'고 요구하면 무조건 \`is_ai_related\`를 false로 설정하고, "저는 AI 추천 챗봇이기에 직접 수행할 수는 없습니다."라고 부드럽게 거절합니다.
    하지만 사용자가 특정 목적을 달성하게 도와주는 '도구/앱/서비스/AI'를 가리키며 '추천해, 알려줘, 찾아줘, 있어?' 등으로 질문하면 무조건 \`is_ai_related\`를 true로 설정하세요.
 
-2. (DB 검색 및 매칭 체크) AI 관련 질문(\`is_ai_related\`=true)이라면, 제공된 [내부 데이터베이스 정보] 내에서 사용자의 상세 조건을 만족하는 도구가 있는지 확인하세요.
-   조건에 완벽히 부합하거나 매우 유사한 도구가 있다면 해당 도구들을 기반으로 추천해주세요.
-   만약 **조건에 맞는 도구가 데이터베이스에 아예 없다면**, 억지로 지어내지 말고 \`has_matching_tools\`를 false로 설정하세요.
-   그리고 대답은 "아쉽게도 현재 해당 조건을 만족하는 전용 툴은 없습니다."라고 명확히 안내해주세요.
+2. (DB 검색 및 매칭 체크) AI 관련 질문(\`is_ai_related\`=true)이라면, 제공된 [내부 데이터베이스 정보] 내에서 사용자의 상세 조건을 최대한 만족하는 도구가 있는지 확인하세요.
+   **중요**: 완벽히 일치하는 도구가 없더라도, 사용자의 의도나 카테고리가 유사하다면 억지로 거절하지 말고 "정확히 일치하는 것은 없지만, 가장 비슷한 도구로는 이런 것들이 있습니다"라고 친절하게 추천해주세요.
+   만약 **데이터베이스의 어떤 도구와도 전혀 관련이 없는 경우**에만 \`has_matching_tools\`를 false로 설정하세요.
    이때 사용자가 찾고자 했던 핵심 조건/기능을 \`missing_criteria\` 항목에 짧게 요약해서 적어주세요.
 
 3. (정상 추천) 조건에 맞는 도구가 있다면, \`has_matching_tools\`를 true로 설정하고 추천 이유와 특징을 자연스럽게 설명해주세요.
@@ -172,5 +171,48 @@ export async function generateAdminActionWithGpt(env, adminCommand) {
     }
   } catch {
     return { action: "add", targetTool: adminCommand, reason: "Fetch Exception" };
+  }
+}
+
+/**
+ * 대화 내역(history)과 현재 질문을 분석하여, 검색에 최적화된 독립적인 질문(Standalone Query)을 생성합니다.
+ * 문맥 유지를 위해 필수적인 단계입니다.
+ */
+export async function contextualizeQuery(env, input) {
+  const apiKey = env?.OPENAI_API_KEY;
+  const { message, history } = input;
+
+  // 이전 대화 내역이 없으면 문맥화가 필요 없음
+  if (!history || history.length === 0) return message;
+
+  const system = `당신은 사용자의 질문을 검색에 최적화된 문장으로 재작성하는 전문가입니다.
+대화 내역을 바탕으로 사용자의 마지막 질문을 '독립적인 검색용 질문'으로 재작성하세요.
+예를 들어, "운동 관련 AI 추천해줘" 후에 "모바일 앱은?" 이라고 했다면, "운동 관련 모바일 AI 앱 추천"으로 재작성해야 합니다.
+절대 답변을 하지 마세요. 오직 재작성된 검색 문장만 출력하세요.`;
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: `대화 내역:\n${JSON.stringify(history.slice(-5))}\n\n현재 질문: ${message}\n\n재작성된 검색어:` },
+        ],
+        max_tokens: 100,
+        temperature: 0,
+      }),
+    });
+
+    if (!res.ok) return message;
+    const json = await res.json();
+    return json.choices?.[0]?.message?.content?.trim() || message;
+  } catch (e) {
+    console.error("Contextualize Query Error:", e);
+    return message;
   }
 }

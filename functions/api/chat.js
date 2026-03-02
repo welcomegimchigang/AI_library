@@ -8,7 +8,7 @@
   matchQ,
   text
 } from "../_lib/tools.js";
-import { getEmbedding, generateRagResponse, generateAdminActionWithGpt } from "../_lib/openai.js";
+import { getEmbedding, generateRagResponse, generateAdminActionWithGpt, contextualizeQuery } from "../_lib/openai.js";
 
 const GUEST_LIMIT = 10;
 const USER_LIMIT = 30;
@@ -127,8 +127,11 @@ export async function onRequestPost(context) {
       });
     }
 
-    // 1. 질문 임베딩 생성
-    const vector = await getEmbedding(env, message);
+    // 1. 문맥 파악 및 검색 최적화 (대화 내역 반영)
+    const searchQuery = await contextualizeQuery(env, { message, history });
+
+    // 2. 질문 임베딩 생성 (재작성된 searchQuery 사용)
+    const vector = await getEmbedding(env, searchQuery);
     let contextDocs = "";
     let matchedToolsIds = [];
 
