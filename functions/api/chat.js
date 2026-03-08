@@ -281,8 +281,9 @@ URL: ${t.website}`;
       );
     }
 
-    // 6. (Case B) 조건에 맞는 툴이 없는 경우 (GPT가 생성한 유연한 피드백 전달)
-    if (!effectiveHasMatchingTools) {
+    // 6. [중요] 조건에 맞는 툴이 없는 경우(GPT 판단) -> 수집 대기열(KV/Discord) 적재
+    // 비슷한 툴을 찾아서('hasContext') 추천해주더라도, 사장님의 자동 수집 봇은 작동해야 하므로 독립적으로 실행합니다.
+    if (!rag.has_matching_tools) {
       if (env.MISSING_TOOLS_KV) {
         const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         context.waitUntil(
@@ -303,12 +304,15 @@ URL: ${t.website}`;
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content: `🚨 **AI 툴 검색 실패 건 발생 (RAG 기반)**\n- 유저 입력: \`${message}\`\n- 누락된 핵심 조건: \`${rag.missing_criteria}\`\n- 설명: Cloudflare D1 \`search_logs\` 및 KV DB에 적재되었습니다.`
+              content: `🚨 **새로운 AI 툴 수집 요청 (RAG 감지)**\n- 유저 입력: \`${message}\`\n- 누락된 핵심 조건: \`${rag.missing_criteria}\`\n- 설명: 새벽 깃헙 액션 봇이 이 정보를 바탕으로 툴을 찾아올 것입니다.`
             })
           }).catch(undefined)
         );
       }
+    }
 
+    // 7. (Case B) 아예 보여 줄 도구가 단 하나도 없는 경우
+    if (!effectiveHasMatchingTools) {
       return Response.json({
         reply: { text: rag.reply || "죄송합니다. 현재 해당 조건에 딱 맞는 도구는 찾지 못했습니다. 곧 추가하겠습니다!" },
         state: "refining", missing: [], quickReplies: defaultQuickReplies(prevFilters, []), filters: prevFilters, tools: [],
