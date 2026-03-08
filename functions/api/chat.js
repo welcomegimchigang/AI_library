@@ -243,7 +243,38 @@ URL: ${t.website}`;
     // 서버가 컨텍스트가 있으면 추천 플로우를 타게 한다.
     const effectiveHasMatchingTools = hasContext ? true : !!rag.has_matching_tools;
 
-    // 4. (Case A) AI 툴 관련 질문이 아닌 경우 (1줄 내외 짧은 답변)
+    // 4. [긴급/우선순위] 누락 툴 수집 및 알림 로직 (답변 종료 전 최우선 실행)
+    // AI 관련 질문이 아니라고 판단하더라도(is_ai_related: false), 
+    // 사용자가 찾고 싶어 한 '핵심 정보'는 일단 사장님 대기열에 넣어둡니다.
+    if (!rag.has_matching_tools) {
+      if (env.MISSING_TOOLS_KV) {
+        const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        context.waitUntil(
+          env.MISSING_TOOLS_KV.put(queryKey, JSON.stringify({
+            query: message,
+            intent: "rag_missing",
+            missing_criteria: rag.missing_criteria,
+            filters: prevFilters,
+            status: "pending",
+            timestamp: Date.now()
+          })).catch(e => console.error("KV Put Error:", e))
+        );
+      }
+
+      if (env.DISCORD_WEBHOOK_URL) {
+        context.waitUntil(
+          fetch(env.DISCORD_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              content: `🚨 **새로운 AI 툴 수집 요청 (RAG 감지)**\n- 유저 입력: \`${message}\`\n- 누락된 핵심 조건: \`${rag.missing_criteria}\`\n- 설명: 새벽 깃헙 액션 봇이 이 정보를 바탕으로 툴을 찾아올 것입니다.`
+            })
+          }).catch(e => console.error("Discord Webhook Error:", e))
+        );
+      }
+    }
+
+    // 5. (Case A) AI 툴 관련 질문이 아니라고 판단된 경우 (답변 후 종료)
     if (!rag.is_ai_related) {
       return Response.json({
         reply: {
@@ -259,7 +290,7 @@ URL: ${t.website}`;
 
     const persona = body?.persona || {}; // { gender, birthYear, job }
 
-    // 5. [NEW] D1에 유저 검색 로그 저장 (비동기로 백그라운드 처리)
+    // 6. [NEW] D1에 유저 검색 로그 저장 (비동기로 백그라운드 처리)
     if (env.DB) {
       context.waitUntil(
         env.DB.prepare(`
@@ -279,36 +310,6 @@ URL: ${t.website}`;
           .run()
           .catch(e => console.error("Failed to log search query to D1:", e))
       );
-    }
-
-    // 6. [중요] 조건에 맞는 툴이 없는 경우(GPT 판단) -> 수집 대기열(KV/Discord) 적재
-    // 비슷한 툴을 찾아서('hasContext') 추천해주더라도, 사장님의 자동 수집 봇은 작동해야 하므로 독립적으로 실행합니다.
-    if (!rag.has_matching_tools) {
-      if (env.MISSING_TOOLS_KV) {
-        const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-        context.waitUntil(
-          env.MISSING_TOOLS_KV.put(queryKey, JSON.stringify({
-            query: message,
-            intent: "rag_missing",
-            missing_criteria: rag.missing_criteria,
-            filters: prevFilters,
-            status: "pending",
-            timestamp: Date.now()
-          })).catch(console.error)
-        );
-      }
-
-      if (env.DISCORD_WEBHOOK_URL) {
-        context.waitUntil(
-          fetch(env.DISCORD_WEBHOOK_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              content: `🚨 **새로운 AI 툴 수집 요청 (RAG 감지)**\n- 유저 입력: \`${message}\`\n- 누락된 핵심 조건: \`${rag.missing_criteria}\`\n- 설명: 새벽 깃헙 액션 봇이 이 정보를 바탕으로 툴을 찾아올 것입니다.`
-            })
-          }).catch(undefined)
-        );
-      }
     }
 
     // 7. (Case B) 아예 보여 줄 도구가 단 하나도 없는 경우
