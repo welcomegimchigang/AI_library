@@ -227,3 +227,18 @@ npm run preview:cf   # Cloudflare Pages 로컬 미리보기 (wrangler)
 npm run build:data   # tools.jsonl → data/ 빌드
 npm run build        # 프로덕션 빌드
 ```
+
+---
+
+## 11. 스타트업 팀 (Agents)
+
+서비스 운영과 개발을 위해 다음 4인의 가상 팀원(Agent)이 구성되어 있습니다. 상세 정의는 `.agents/` 폴더를 참조하세요.
+
+| 이름 | 역할 | 주요 업무 |
+|---|---|---|
+| **Sarah** | **Product Manager** | 전체 로드맵 관리, 업무 배분, 결과물 최종 검토 |
+| **Leo** | **Full-Stack Developer** | React UI 및 API 개발, 버그 수정, 기술 설계 |
+| **Alex** | **Data Engineer** | `tools.jsonl` 데이터 관리, Python 파이프라인 운영 |
+| **Chloe** | **Growth Marketer** | 홍보 카피 작성, SEO 최적화, 피드백 분석 |
+
+**협업 모델**: Sarah가 목표를 설정하면 각 팀원이 전문 분야에 맞춰 업무를 수행하고 최종적으로 Sarah의 승인을 거쳐 반영합니다.

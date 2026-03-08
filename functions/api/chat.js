@@ -178,7 +178,7 @@ export async function onRequestPost(context) {
 
         // ---- score threshold (서버에서 판단) ----
         const topScore = matches[0]?.score ?? 0;
-        const SCORE_THRESHOLD = 0.22; // 필요 시 조정 (0.20~0.30 권장 시작)
+        const SCORE_THRESHOLD = 0.15; // 기존 0.22에서 0.15로 완화하여 더 유연한 대답 유도
         const hasGoodMatch = matches.length > 0 && topScore >= SCORE_THRESHOLD;
 
         if (hasGoodMatch) {
@@ -205,9 +205,24 @@ URL: ${url || "URL 없음"}`;
             })
             .join("\n\n");
         } else {
-          // 매칭 품질 낮으면 GPT에게 빈 컨텍스트 전달 (모델이 score 보고 무시하는 현상 방지)
-          matchedToolsIds = [];
-          contextDocs = "";
+          // [Hybrid Fallback] 벡터 검색 결과가 좋지 않을 때, 기존 키워드 기반 rankTools를 병행하여 보완
+          console.log("[RAG] Vectorize score too low. Falling back to rankTools...");
+          const allTools = await loadTools(request, env);
+          const legacyResults = rankTools(allTools, {}, message, 5);
+
+          if (legacyResults.length > 0) {
+            matchedToolsIds = legacyResults.map(t => t.damoa_id);
+            contextDocs = legacyResults.map((t, idx) => {
+              return `[도구 ${idx + 1}]
+이름: ${t.serviceName}
+카테고리: ${t.serviceType}
+설명: ${t.description || t.keyFeatures_list?.[0] || ""}
+URL: ${t.website}`;
+            }).join("\n\n");
+          } else {
+            matchedToolsIds = [];
+            contextDocs = "";
+          }
         }
 
         console.log("[RAG] contextDocs length:", contextDocs?.length || 0);
@@ -263,7 +278,7 @@ URL: ${url || "URL 없음"}`;
       );
     }
 
-    // 6. (Case B) 조건에 맞는 툴이 없는 경우 (반드시 정해진 문구 출력)
+    // 6. (Case B) 조건에 맞는 툴이 없는 경우 (GPT가 생성한 유연한 피드백 전달)
     if (!effectiveHasMatchingTools) {
       if (env.MISSING_TOOLS_KV) {
         const queryKey = `missing_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -292,7 +307,7 @@ URL: ${url || "URL 없음"}`;
       }
 
       return Response.json({
-        reply: { text: "죄송합니다. 빠른 시일 내에 추가하겠습니다." },
+        reply: { text: rag.reply || "죄송합니다. 현재 해당 조건에 딱 맞는 도구는 찾지 못했습니다. 곧 추가하겠습니다!" },
         state: "refining", missing: [], quickReplies: defaultQuickReplies(prevFilters, []), filters: prevFilters, tools: [],
       });
     }
