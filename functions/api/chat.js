@@ -6,7 +6,8 @@
   matchPlatform,
   matchLocation,
   matchQ,
-  text
+  text,
+  parseMessageToFilters
 } from "../_lib/tools.js";
 import { getEmbedding, generateRagResponse, generateAdminActionWithGpt, contextualizeQuery } from "../_lib/openai.js";
 
@@ -208,7 +209,9 @@ URL: ${url || "URL 없음"}`;
           // [Hybrid Fallback] 벡터 검색 결과가 좋지 않을 때, 기존 키워드 기반 rankTools를 병행하여 보완
           console.log("[RAG] Vectorize score too low. Falling back to rankTools...");
           const allTools = await loadTools(request, env);
-          const legacyResults = rankTools(allTools, {}, message, 5);
+          // [Fix] rankTools에 필터를 명시적으로 파싱하여 전달해야 검색이 작동함
+          const parsedFilters = parseMessageToFilters(message);
+          const legacyResults = rankTools(allTools, parsedFilters, message, 5);
 
           if (legacyResults.length > 0) {
             matchedToolsIds = legacyResults.map(t => t.damoa_id);

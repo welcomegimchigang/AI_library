@@ -77,12 +77,12 @@ ${contextDocs}`;
           { role: "user", content: JSON.stringify(userPayload) },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 300,
+        max_tokens: 1000,
         temperature: 0.2,
       }),
     });
 
-    if (!res.ok) return { is_ai_related: true, has_matching_tools: false, reply: "OpenAI API 호출 에러 발생." };
+    if (!res.ok) return { is_ai_related: true, has_matching_tools: false, reply: "잠시 후 다시 시도해주세요. (OpenAI API 에러)" };
 
     const payload = await res.json();
     const text = payload.choices?.[0]?.message?.content;
@@ -91,12 +91,12 @@ ${contextDocs}`;
     return {
       is_ai_related: parsed.is_ai_related !== false,
       has_matching_tools: parsed.has_matching_tools !== false,
-      reply: parsed.reply || "추천 정보를 가져왔습니다.",
+      reply: parsed.reply || "관련된 AI 도구들을 찾아보았습니다.",
       missing_criteria: parsed.missing_criteria || ""
     };
   } catch (e) {
     console.error("RAG GPT Error:", e);
-    return { is_ai_related: true, has_matching_tools: false, reply: "알 수 없는 에러가 발생했습니다." };
+    return { is_ai_related: true, has_matching_tools: true, reply: "검색 결과를 바탕으로 추천해 드립니다." };
   }
 }
 
