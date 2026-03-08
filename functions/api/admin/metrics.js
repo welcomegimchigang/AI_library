@@ -237,6 +237,54 @@ export async function onRequestGet(context) {
       top_clicks = clicksResult.results || [];
     } catch (e) { console.error("top_clicks query failed (table may not exist yet - run /api/db/init):", e); }
 
+    // --- NEW: CSV Export Logic for Monetization ---
+    const action = url.searchParams.get("action");
+    if (action === "export_csv") {
+      const rawData = await env.DB.prepare(`
+        SELECT 
+          c.id as click_id,
+          c.tool_name,
+          c.category as tool_category,
+          c.created_at as click_time,
+          s.user_gender,
+          s.user_job,
+          (2026 - s.user_birth_year + 1) as user_age,
+          s.user_birth_year
+        FROM tool_clicks c
+        LEFT JOIN (
+          SELECT session_id, user_gender, user_job, user_birth_year
+          FROM search_logs
+          WHERE session_id IS NOT NULL
+          GROUP BY session_id
+        ) s ON c.session_id = s.session_id
+        ORDER BY c.created_at DESC
+        LIMIT 2000
+      `).all();
+
+      const rows = rawData.results || [];
+      const headers = ["ClickID", "ToolName", "Category", "Time", "Gender", "Job", "Age", "BirthYear"];
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(r => [
+          r.click_id,
+          `"${r.tool_name?.replace(/"/g, '""')}"`,
+          `"${r.tool_category || ''}"`,
+          r.click_time,
+          r.user_gender || 'Unknown',
+          `"${r.user_job || 'Unknown'}"`,
+          r.user_age || 'Unknown',
+          r.user_birth_year || 'Unknown'
+        ].join(","))
+      ].join("\n");
+
+      return new Response("\uFEFF" + csvContent, {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="loominai_audience_data_${new Date().toISOString().split('T')[0]}.csv"`
+        }
+      });
+    }
+
     return Response.json({
       success: true,
       data: {

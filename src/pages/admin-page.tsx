@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { LineChart, Search, AlertCircle, Database, MessageSquare, Trash2, RefreshCw, ExternalLink, Moon, Sun } from "lucide-react";
+import { LineChart, Search, AlertCircle, Database, MessageSquare, Trash2, RefreshCw, ExternalLink, Moon, Sun, Sparkles } from "lucide-react";
 import { useTools } from "@/contexts/tool-context";
 
 export function AdminPage() {
@@ -110,6 +110,12 @@ export function AdminPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     fetchAllData(secret);
+  };
+
+  const handleExportAudienceData = () => {
+    // API 엔드포인트 직접 호출하여 다운로드 유도
+    const exportUrl = `/api/admin/metrics?secret=${secret}&action=export_csv`;
+    window.location.href = exportUrl;
   };
 
   const handleDeleteFeedback = async (key: string) => {
@@ -228,6 +234,32 @@ export function AdminPage() {
           <div className="bg-white dark:bg-slate-900 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
             <p className="text-[10px] text-blue-600 dark:text-blue-500 font-black uppercase tracking-widest mb-2">활성 피드백 건수</p>
             <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{feedbacks.length}</p>
+          </div>
+        </div>
+
+        {/* --- Monetization (BM 2) Dashboard Section --- */}
+        <div className="mb-10 bg-gradient-to-br from-indigo-900 to-slate-900 rounded-xl p-6 shadow-2xl border border-indigo-500/30 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <LineChart className="w-48 h-48 text-white rotate-12" />
+          </div>
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[10px] font-bold uppercase tracking-widest mb-4">
+                <Sparkles className="w-3 h-3" />
+                Premium Revenue Asset
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2">실시간 오디언스 트렌드 리포트 (B2B 판매용)</h2>
+              <p className="text-indigo-200/70 text-sm leading-relaxed">
+                사용자의 <b>성별, 연령, 직업</b>과 그들이 실제로 <b>어떤 AI 도구를 클릭했는지</b>를 결합한 고부가 가치 데이터입니다. 이 원본 데이터를 마케팅 리서치 기업이나 기업 고객에게 리포트 형태로 판매할 수 있습니다.
+              </p>
+            </div>
+            <button
+              onClick={handleExportAudienceData}
+              className="whitespace-nowrap px-8 py-4 bg-white hover:bg-indigo-50 text-indigo-900 font-black rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all flex items-center gap-3 group"
+            >
+              <Database className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              데이터 원본 추출 (CSV)
+            </button>
           </div>
         </div>
 
