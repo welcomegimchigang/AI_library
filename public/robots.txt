@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /ads.txt
 Disallow: /api/
 
 Sitemap: https://ai-library-dhm.pages.dev/sitemap.xml
