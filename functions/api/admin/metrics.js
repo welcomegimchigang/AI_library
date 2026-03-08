@@ -6,9 +6,15 @@ export async function onRequestGet(context) {
   const pAgeGroup = url.searchParams.get("age_group");
   const pJob = url.searchParams.get("job");
 
-  // Simple secret-based protection
-  if (secret !== env.KV_API_SECRET) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  // Cloudflare 환경 변수가 제대로 설정되었는지 확인
+  if (!env.KV_API_SECRET) {
+    console.error("Critical: KV_API_SECRET is not set in Cloudflare environment variables.");
+    return Response.json({ error: "Server Configuration Error: Secret is not set." }, { status: 500 });
+  }
+
+  // 양쪽 공백 제거 후 비교 (복사/붙여넣기 실수 방지)
+  if (!secret || secret.trim() !== env.KV_API_SECRET.trim()) {
+    return Response.json({ error: "Unauthorized: Invalid secret key." }, { status: 401 });
   }
 
   if (!env.DB) {

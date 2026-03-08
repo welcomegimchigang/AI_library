@@ -48,7 +48,11 @@ export async function onRequest(context) {
     }
 
     // GET: 건의사항 관리 (조회/삭제) - Secret 필수
-    if (secret !== env.KV_API_SECRET) {
+    if (!env.KV_API_SECRET) {
+        return Response.json({ error: "Server Configuration Error: Secret is not set." }, { status: 500 });
+    }
+
+    if (!secret || secret.trim() !== env.KV_API_SECRET.trim()) {
         return new Response("Unauthorized", { status: 401 });
     }
 
