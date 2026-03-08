@@ -2,6 +2,15 @@ name = "ai-library"
 pages_build_output_dir = "dist"
 compatibility_date = "2025-01-01"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "ai-library-db"
+database_id = "3de5cf7e-6b0f-4691-9f9a-085c67b4fb6c"
+
+[[kv_namespaces]]
+binding = "MISSING_TOOLS_KV"
+id = "b700c5acae9f4711bb81eac780921182"
+
 [[vectorize]]
 binding = "VECTORIZE"
 index_name = "ai-tools-index"
