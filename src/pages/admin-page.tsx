@@ -78,10 +78,12 @@ export function AdminPage() {
 
       // 1. Fetch Metrics (D1)
       const resMetrics = await fetch(metricsUrl);
-      if (!resMetrics.ok)
+      if (!resMetrics.ok) {
+        const errorData = await resMetrics.json().catch(() => ({}));
         throw new Error(
-          resMetrics.status === 401 ? "비밀번호가 틀렸습니다." : "데이터 로드 실패",
+          errorData.error || (resMetrics.status === 401 ? "비밀번호가 틀렸습니다." : "데이터 로드 실패")
         );
+      }
       const dataMetrics = await resMetrics.json();
       setMetrics(dataMetrics.data);
 
