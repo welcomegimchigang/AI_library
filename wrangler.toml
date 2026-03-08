@@ -1,8 +1,0 @@
-name = "ai-library"
-pages_build_output_dir = "dist"
-compatibility_date = "2025-01-01"
-
-# Bindings are managed via the Cloudflare Pages Dashboard for maximum flexibility and to avoid "Managed by wrangler.toml" lock.
-# - DB (D1 Database: ai-library-db)
-# - MISSING_TOOLS_KV (KV Namespace: loominai-kv)
-# - VECTORIZE (Vectorize Index: ai-tools-index)
