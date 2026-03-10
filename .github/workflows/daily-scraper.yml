@@ -27,7 +27,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests deep-translator duckduckgo-search openai
+          pip install requests deep-translator duckduckgo-search openai python-dotenv langchain-openai
 
       # 1. 크롤러 동작으로 JSONL 데이터를 다운받고 번역해 추가
       - name: Run Scraper Bot
